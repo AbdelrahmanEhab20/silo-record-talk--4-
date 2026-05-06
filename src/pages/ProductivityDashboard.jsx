@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { useTheme } from '@/lib/ThemeContext';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, Clock, CheckSquare, TrendingUp } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function ProductivityDashboard() {
 
   const fetchSessions = async () => {
     try {
-      const data = await base44.entities.Session.list('-created_date', 100);
+      const data = await appClient.entities.Session.list('-created_date', 100);
       setSessions(data);
       calculateMetrics(data);
     } catch (error) {

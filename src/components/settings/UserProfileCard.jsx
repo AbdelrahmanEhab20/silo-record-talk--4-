@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Camera, Pencil, Check, X, Loader2, User } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
 
@@ -13,7 +13,7 @@ export default function UserProfileCard() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
+    appClient.auth.me().then((u) => {
       setUser(u);
       setForm({
         full_name: u.full_name || "",
@@ -30,9 +30,9 @@ export default function UserProfileCard() {
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.auth.updateMe({ profile_photo_url: file_url });
-      const updated = await base44.auth.me();
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
+      await appClient.auth.updateMe({ profile_photo_url: file_url });
+      const updated = await appClient.auth.me();
       setUser(updated);
     } finally {
       setUploadingPhoto(false);
@@ -42,8 +42,8 @@ export default function UserProfileCard() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await base44.auth.updateMe(form);
-      const updated = await base44.auth.me();
+      await appClient.auth.updateMe(form);
+      const updated = await appClient.auth.me();
       setUser(updated);
       setEditing(false);
     } finally {

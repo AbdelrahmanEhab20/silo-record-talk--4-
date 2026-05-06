@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, HelpCircle, Loader2, Zap, GraduationCap } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { format, addDays } from "date-fns";
 
 const QUIZ_DIFFICULTIES = [
@@ -33,12 +33,12 @@ export default function EducationalToolsPanel({ session, transcript, summary, on
 
   const saveStudyRecord = async ({ activityType, score, totalItems, difficulty }) => {
     try {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const intervalDays = activityType === "quiz"
         ? getNextInterval(score, difficulty)
         : 3; // flashcards default: review in 3 days
       const nextReview = format(addDays(new Date(), intervalDays), "yyyy-MM-dd");
-      await base44.entities.StudyRecord.create({
+      await appClient.entities.StudyRecord.create({
         user_email: user.email,
         session_id: session?.id,
         session_title: session?.title,
@@ -62,7 +62,7 @@ export default function EducationalToolsPanel({ session, transcript, summary, on
     setLoadingFlashcards(true);
     setError(null);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are an expert educator. Generate 10 study flashcards from the following educational session content.
 Each flashcard should test a key concept, term, or fact from the session.
 Return a JSON array of objects with these fields:
@@ -111,7 +111,7 @@ ${context.slice(0, 6000)}`,
         medium: "comprehension and application questions requiring understanding",
         hard: "analysis, synthesis, and critical thinking questions"
       };
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are an expert educator. Generate 8 multiple-choice quiz questions at ${difficulty} difficulty from the following educational session content.
 Difficulty level: ${difficultyGuide[difficulty]}
 

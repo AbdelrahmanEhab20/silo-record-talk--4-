@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/lib/ThemeContext';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, Zap, Crown, Building2, ChevronRight, Star } from 'lucide-react';
 import { PLAN_CONFIG, isPro } from '@/utils/planConfig';
@@ -17,9 +17,9 @@ export default function Pricing() {
   useEffect(() => {
     const load = async () => {
       try {
-        const user = await base44.auth.me();
+        const user = await appClient.auth.me();
         if (user) {
-          const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+          const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
           if (subs.length > 0) setSubscription(subs[0]);
         }
       } catch (e) {
@@ -34,8 +34,8 @@ export default function Pricing() {
   const handleProUpgrade = async () => {
     setCheckingOut(true);
     try {
-      const user = await base44.auth.me();
-      const response = await base44.functions.invoke('createCheckoutSession', {
+      const user = await appClient.auth.me();
+      const response = await appClient.functions.invoke('createCheckoutSession', {
         plan: 'pro',
         billing_interval: billing,
         user_email: user.email,
@@ -160,10 +160,10 @@ function FreeCard({ isDark, card, text, sub, border, isCurrentPlan, subscription
   const toggleAds = async () => {
     setLocalAds(!localAds);
     try {
-      const user = await base44.auth.me();
-      const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+      const user = await appClient.auth.me();
+      const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
       if (subs.length > 0) {
-        await base44.entities.PlanSubscription.update(subs[0].id, { ads_enabled: !localAds });
+        await appClient.entities.PlanSubscription.update(subs[0].id, { ads_enabled: !localAds });
       }
     } catch (e) {
       console.error(e);

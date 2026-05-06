@@ -1,6 +1,6 @@
 import React from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { CalendarDays, Loader2, LogOut, RefreshCw } from "lucide-react";
 
 const CONNECTOR_ID = "69f36381360cadf794b1d9be";

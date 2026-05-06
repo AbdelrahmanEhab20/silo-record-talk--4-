@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { X, Share2, Check, Users, Lock, Eye, Pencil } from "lucide-react";
 
@@ -12,15 +12,15 @@ export default function ShareSessionModal({ session, onClose }) {
 
   useEffect(() => {
     const load = async () => {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const [myWorkspaces, memberOf, existing] = await Promise.all([
-        base44.entities.Workspace.filter({ owner_email: user.email }),
-        base44.entities.WorkspaceMember.filter({ user_email: user.email, status: "active" }),
-        base44.entities.SharedSession.filter({ session_id: session.id }),
+        appClient.entities.Workspace.filter({ owner_email: user.email }),
+        appClient.entities.WorkspaceMember.filter({ user_email: user.email, status: "active" }),
+        appClient.entities.SharedSession.filter({ session_id: session.id }),
       ]);
       const memberWorkspaceIds = memberOf.map((m) => m.workspace_id);
       const otherWorkspaces = memberWorkspaceIds.length > 0
-        ? await Promise.all(memberWorkspaceIds.map((id) => base44.entities.Workspace.get(id).catch(() => null)))
+        ? await Promise.all(memberWorkspaceIds.map((id) => appClient.entities.Workspace.get(id).catch(() => null)))
         : [];
       const allWorkspaces = [
         ...myWorkspaces,
@@ -40,11 +40,11 @@ export default function ShareSessionModal({ session, onClose }) {
     setSharing(workspace.id);
     const existing = getShareForWorkspace(workspace.id);
     if (existing) {
-      await base44.entities.SharedSession.update(existing.id, { permission });
+      await appClient.entities.SharedSession.update(existing.id, { permission });
       setSharedWith((prev) => prev.map((s) => s.id === existing.id ? { ...s, permission } : s));
     } else {
-      const user = await base44.auth.me();
-      const created = await base44.entities.SharedSession.create({
+      const user = await appClient.auth.me();
+      const created = await appClient.entities.SharedSession.create({
         session_id: session.id,
         workspace_id: workspace.id,
         shared_by_email: user.email,
@@ -60,7 +60,7 @@ export default function ShareSessionModal({ session, onClose }) {
     const existing = getShareForWorkspace(workspaceId);
     if (!existing) return;
     setSharing(workspaceId);
-    await base44.entities.SharedSession.delete(existing.id);
+    await appClient.entities.SharedSession.delete(existing.id);
     setSharedWith((prev) => prev.filter((s) => s.id !== existing.id));
     setSharing(null);
   };

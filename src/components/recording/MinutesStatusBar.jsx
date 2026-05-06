@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { useTheme } from '@/lib/ThemeContext';
 import WatchAdModal from '@/components/WatchAdModal';
 
@@ -11,8 +11,8 @@ export default function MinutesStatusBar() {
   const [showAdModal, setShowAdModal] = useState(false);
 
   const fetchSub = async () => {
-    const user = await base44.auth.me();
-    const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+    const user = await appClient.auth.me();
+    const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
     if (subs.length > 0) setSub(subs[0]);
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Loader2, TrendingUp, Clock, Target, Zap } from "lucide-react";
 
@@ -110,7 +110,7 @@ export default function AggregateMetrics({ sessions, subscription }) {
       return `${i}. Title: "${s.title}" | Tags: ${(s.tags || []).join(', ')} | Summary: ${summary.slice(0, 200)}`;
     }).join('\n');
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are a sentiment analyst. For each session below, rate the overall tone/sentiment on a scale of 0-100 where:
 0-30 = negative/tense/challenging
 31-55 = neutral/mixed

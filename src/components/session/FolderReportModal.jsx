@@ -4,7 +4,7 @@ import {
   X, FileText, Loader2, Download, ChevronDown, ChevronUp,
   Folder, RefreshCw, Clock, FileDown, AlignLeft, BookOpen,
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { generateSiloDocx } from "@/lib/siloDocxExport";
 import jsPDF from "jspdf";
@@ -312,7 +312,7 @@ export default function FolderReportModal({ folderName, sessions, user, onClose,
     if (initialReport) { setExpandedSection("executive"); return; }
     const load = async () => {
       if (!user?.email) return;
-      const existing = await base44.entities.FolderReport.filter({ user_email: user.email, folder_name: folderName }, "-created_date", 1);
+      const existing = await appClient.entities.FolderReport.filter({ user_email: user.email, folder_name: folderName }, "-created_date", 1);
       if (existing.length > 0) {
         setSavedReport(existing[0]);
         setReport(existing[0].report_data);
@@ -334,7 +334,7 @@ export default function FolderReportModal({ folderName, sessions, user, onClose,
   };
 
   const summarizeChunk = async (chunk, sessionTitle, chunkIndex, totalChunks) => {
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are extracting detailed notes from part ${chunkIndex + 1} of ${totalChunks} of a meeting/session transcript titled "${sessionTitle}".
 
 Extract EVERYTHING of value — do not summarise too aggressively. Preserve:
@@ -383,7 +383,7 @@ ${chunk}`,
 
     // If combined summaries are still too large, do a second pass
     if (combinedSummary.length > CHUNK_SIZE * 2) {
-      const secondPass = await base44.integrations.Core.InvokeLLM({
+      const secondPass = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are consolidating multiple chunk summaries of a session titled "${session.title || "Untitled"}".
 Merge these summaries into ONE comprehensive summary preserving ALL key points, decisions, action items, and facts.
 
@@ -406,7 +406,7 @@ ${combinedSummary}`,
     );
     const sessionDocs = sessionContents.join("\n\n");
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       model: "gpt_5",
       prompt: `You are a senior meeting analyst and professional minutes writer tasked with producing HIGHLY DETAILED, OFFICIAL MEETING MINUTES for the folder/project "${folderName}".
 
@@ -510,9 +510,9 @@ DETAILED INSTRUCTIONS FOR EACH FIELD:
 
     let saved;
     if (savedReport?.id) {
-      saved = await base44.entities.FolderReport.update(savedReport.id, reportRecord);
+      saved = await appClient.entities.FolderReport.update(savedReport.id, reportRecord);
     } else {
-      saved = await base44.entities.FolderReport.create(reportRecord);
+      saved = await appClient.entities.FolderReport.create(reportRecord);
     }
 
     setSavedReport(saved);

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import AudioPlayer from "./AudioPlayer";
 import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import AudioDownloadMenu from "./AudioDownloadMenu";
 
 export default function SingleSessionAudioPlayer({ session, sessionId, onTranscriptUpdated }) {
@@ -17,7 +17,7 @@ export default function SingleSessionAudioPlayer({ session, sessionId, onTranscr
     setDetectedDuration(dur);
     if (!session.duration || session.duration <= 0) {
       try {
-        await base44.entities.Session.update(sessionId, { duration: Math.floor(dur) });
+        await appClient.entities.Session.update(sessionId, { duration: Math.floor(dur) });
       } catch (e) {
         console.warn('Could not save detected duration:', e);
       }
@@ -28,8 +28,8 @@ export default function SingleSessionAudioPlayer({ session, sessionId, onTranscr
     if (!session.audio_file_url) return;
     setRetranscribing(true);
     try {
-      await base44.entities.Session.update(sessionId, { processing_status: 'pending' });
-      await base44.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true });
+      await appClient.entities.Session.update(sessionId, { processing_status: 'pending' });
+      await appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true });
       if (onTranscriptUpdated) onTranscriptUpdated(sessionId);
     } catch (e) {
       console.warn('Re-transcribe failed:', e);

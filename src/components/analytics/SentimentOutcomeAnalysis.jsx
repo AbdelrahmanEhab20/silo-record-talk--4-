@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Loader2, TrendingUp } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -29,7 +29,7 @@ Tags: ${(s.tags || []).join(", ")}
 Duration: ${Math.floor((s.duration || 0) / 60)}m
 `).join("\n");
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Analyze these meetings over time and provide insights on sentiment-to-outcome correlation:
 
 ${sessionPrompt}

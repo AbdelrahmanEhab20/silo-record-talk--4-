@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 
 export default function ContactUs() {
@@ -24,7 +24,7 @@ export default function ContactUs() {
     }
     setError(null);
     setLoading(true);
-    await base44.entities.Lead.create({ ...form, source: "contact_us", status: "new" });
+    await appClient.entities.Lead.create({ ...form, source: "contact_us", status: "new" });
     setLoading(false);
     setSubmitted(true);
   };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Check, Eye, EyeOff, Loader2, AlertCircle, ChevronDown, ChevronUp, Lock, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -74,9 +74,9 @@ export default function AIProviderSettings() {
   const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(async u => {
+    appClient.auth.me().then(async u => {
       setUser(u);
-      const subs = await base44.entities.PlanSubscription.filter({ user_email: u.email });
+      const subs = await appClient.entities.PlanSubscription.filter({ user_email: u.email });
       const plan = subs?.[0]?.plan_type;
       setIsPro(plan === "pro" || plan === "enterprise");
       setForm({
@@ -99,7 +99,7 @@ export default function AIProviderSettings() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe(form);
+    await appClient.auth.updateMe(form);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

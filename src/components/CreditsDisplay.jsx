@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Zap, AlertCircle } from "lucide-react";
 
 export default function CreditsDisplay() {
@@ -12,7 +12,7 @@ export default function CreditsDisplay() {
   useEffect(() => {
     const fetchCredits = async () => {
       try {
-        const response = await base44.functions.invoke('getUserCredits', {});
+        const response = await appClient.functions.invoke('getUserCredits', {});
         setCredits(response.data.credits);
         setPlan(response.data.plan);
       } catch (error) {

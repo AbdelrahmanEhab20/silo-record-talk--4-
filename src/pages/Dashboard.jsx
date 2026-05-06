@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useNavigate, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { format, isAfter, isBefore, addDays, parseISO, isValid, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { ArrowLeft, Clock, AlertTriangle, CheckSquare, Calendar, ChevronRight, Loader2, LayoutGrid, List, ChevronDown, Folder } from "lucide-react";
@@ -45,10 +45,10 @@ export default function Dashboard() {
   const [expandedSection, setExpandedSection] = useState(null); // null | "kanban" | "list"
 
   React.useEffect(() => {
-    base44.auth.me().then(async (u) => {
+    appClient.auth.me().then(async (u) => {
       setUser(u);
       if (u) {
-        const subs = await base44.entities.PlanSubscription.filter({ user_email: u.email });
+        const subs = await appClient.entities.PlanSubscription.filter({ user_email: u.email });
         if (subs.length > 0) setSubscription(subs[0]);
       }
     }).catch(() => {});
@@ -59,7 +59,7 @@ export default function Dashboard() {
     queryFn: async () => {
       if (!user) return [];
       // Fetch all sessions, then filter out sub-sessions so counts are consistent app-wide
-      const all = await base44.entities.Session.filter({ user_email: user.email }, "-created_date");
+      const all = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
       return all.filter(s => !s.is_subsession);
     },
     enabled: !!user,
@@ -69,7 +69,7 @@ export default function Dashboard() {
   // Real-time sync with session changes
   React.useEffect(() => {
     if (!user) return;
-    const unsub = base44.entities.Session.subscribe(() => {
+    const unsub = appClient.entities.Session.subscribe(() => {
       refetch();
     });
     return unsub;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { X, AlertTriangle, TrendingDown, Users, Loader2, Zap } from "lucide-react";
 
 export default function MeetingFrictionAnalysis({ transcript, onClose }) {

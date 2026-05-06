@@ -36,14 +36,14 @@ export class ChunkProcessor {
    * Process current chunk with AI
    * Returns the chunk text and starts async LLM analysis
    */
-  async processChunk(base44) {
+  async processChunk(appClient) {
     if (this.currentChunk.length === 0) return null;
 
     const chunkText = this.currentChunk.map(s => s.text).join(' ');
     this.processedChunks++;
 
     // Fire off async AI analysis without blocking
-    this.analyzeChunkAsync(chunkText, base44);
+    this.analyzeChunkAsync(chunkText, appClient);
 
     // Reset chunk for next batch
     const processed = {
@@ -62,15 +62,15 @@ export class ChunkProcessor {
    * Async AI analysis of chunk - sends to Silo for processing
    * Note: Requires backend functions. If unavailable, skips AI analysis
    */
-  async analyzeChunkAsync(chunkText, base44) {
+  async analyzeChunkAsync(chunkText, appClient) {
     try {
       // Check if backend functions are available
-      if (!base44.integrations?.Core?.InvokeLLM) {
+      if (!appClient.integrations?.Core?.InvokeLLM) {
         console.log('Backend functions not available for chunk analysis');
         return;
       }
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are Silo, an AI meeting assistant. Analyze this 5-minute segment of a meeting transcript and extract:
 1. Action items (tasks someone needs to do)
 2. Key decisions made

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Loader2, Clock, FileText, ChevronDown, ChevronUp, RotateCw } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 export default function SubSessionList({ subsessions, onRetryFailed }) {
   const { isDark } = useTheme();
@@ -23,7 +23,7 @@ export default function SubSessionList({ subsessions, onRetryFailed }) {
   const handleRetry = async (sub) => {
     if (!sub.sessionId || sub.status !== "failed") return;
     // Trigger reprocessing
-    await base44.functions.invoke('processSessionBackground', { 
+    await appClient.functions.invoke('processSessionBackground', { 
       session_id: sub.sessionId, 
       force_transcribe: true 
     }).catch(e => console.warn("Retry failed:", e));

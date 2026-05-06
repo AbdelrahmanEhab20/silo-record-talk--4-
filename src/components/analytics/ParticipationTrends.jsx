@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Loader2, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -44,7 +44,7 @@ export default function ParticipationTrends({ sessions }) {
         .sort((a, b) => b.contribution - a.contribution)
         .slice(0, 8);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Analyze speaker participation trends from these meeting transcripts over the last 3 months:
 
 Total meetings: ${recentSessions.length}

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, Check, X, Sparkles } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 export default function SpeakerIdentificationPanel({ sessionId, transcript, currentMapping, onApplyMapping, isDark }) {
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ export default function SpeakerIdentificationPanel({ sessionId, transcript, curr
     setLoading(true);
     setError(null);
     try {
-      const response = await base44.functions.invoke('autoIdentifySpeakers', {
+      const response = await appClient.functions.invoke('autoIdentifySpeakers', {
         sessionId,
       });
       

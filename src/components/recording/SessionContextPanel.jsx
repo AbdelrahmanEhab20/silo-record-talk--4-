@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChevronDown, Image, FileText, Loader2, X, BookOpen, Upload
@@ -62,7 +62,7 @@ export default function SessionContextPanel({ onChange }) {
     const uploaded = [];
     for (const file of files) {
       const preview = URL.createObjectURL(file);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       uploaded.push({ name: file.name, url: file_url, preview });
     }
     const next = [...images, ...uploaded];
@@ -84,7 +84,7 @@ export default function SessionContextPanel({ onChange }) {
     setUploadingAgenda(true);
     const uploaded = [];
     for (const file of files) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       uploaded.push({ name: file.name, url: file_url });
     }
     const next = [...agendaFiles, ...uploaded];

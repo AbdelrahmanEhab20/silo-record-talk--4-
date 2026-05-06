@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { ArrowLeft, Loader2, TrendingUp, TrendingDown, Minus, Lightbulb, BarChart3, MessageCircle, Zap, Target, Layers, Hash, AlignLeft, Repeat, Brain, Globe } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 
@@ -112,10 +112,10 @@ export default function WordAnalysis() {
     const load = async () => {
       if (!sessionId) return;
       try {
-        const user = await base44.auth.me();
+        const user = await appClient.auth.me();
         const [sess, subsessions] = await Promise.all([
-          base44.entities.Session.get(sessionId),
-          base44.entities.Session.filter({ parent_session_id: sessionId, is_subsession: true }),
+          appClient.entities.Session.get(sessionId),
+          appClient.entities.Session.filter({ parent_session_id: sessionId, is_subsession: true }),
         ]);
         if (sess.user_email !== user.email) return;
         setSessionTitle(sess.title || "Session");
@@ -155,7 +155,7 @@ export default function WordAnalysis() {
             runSentimentAnalysis(fullTranscript),
           ]);
           // Cache results
-          await base44.entities.Session.update(sessionId, {
+          await appClient.entities.Session.update(sessionId, {
             word_analysis: wordResult,
             sentiment_analysis: sentimentResult,
           });
@@ -174,7 +174,7 @@ export default function WordAnalysis() {
     const actualTotalWords = cleanText.split(/\s+/).filter(Boolean).length;
     const actualUniqueWords = new Set(cleanText.toLowerCase().replace(/[^\w\s]/g, "").split(/\s+/).filter(Boolean)).size;
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are an advanced NLP word analysis engine. Analyze this transcript and return structured JSON.
 
 IMPORTANT: The transcript has exactly ${actualTotalWords} total words and ${actualUniqueWords} unique words — use these exact numbers.
@@ -214,7 +214,7 @@ Return ONLY valid JSON with this structure:
   };
 
   const runSentimentAnalysis = async (t) => {
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `Analyze this meeting transcript for sentiment, speakers, topics and insights. Return ONLY valid JSON:
 {
   "overall": "positive"|"neutral"|"negative",

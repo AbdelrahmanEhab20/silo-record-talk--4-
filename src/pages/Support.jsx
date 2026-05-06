@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Ear, MessageCircle, ChevronDown, CheckCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -59,7 +59,7 @@ export default function Support() {
     }
     setError("");
     setSubmitting(true);
-    await base44.entities.SupportRequest.create(form);
+    await appClient.entities.SupportRequest.create(form);
     setSubmitting(false);
     setSubmitted(true);
   };

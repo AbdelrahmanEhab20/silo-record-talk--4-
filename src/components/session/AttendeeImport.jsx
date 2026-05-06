@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Loader2, X, FileText, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -56,7 +56,7 @@ export default function AttendeeImport({ onAdd }) {
     setLoading(true);
     setError(null);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
 
       let attendees = [];
 
@@ -66,7 +66,7 @@ export default function AttendeeImport({ onAdd }) {
         file.type === "image/webp"
       ) {
         // Extract from image using LLM
-        const result = await base44.integrations.Core.InvokeLLM({
+        const result = await appClient.integrations.Core.InvokeLLM({
           prompt: `Extract all attendee information from this image (business card, meeting photo, whiteboard, document, etc.). Look for names, titles/roles, emails, and company names.
 
 Return ONLY a JSON array of attendee objects with this structure:
@@ -91,7 +91,7 @@ If no attendee info found, return an empty array [].`,
         attendees = result || [];
       } else {
         // Extract from document (CSV, Excel, Word, PDF)
-        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        const result = await appClient.integrations.Core.ExtractDataFromUploadedFile({
           file_url,
           json_schema: ATTENDEE_SCHEMA,
         });
@@ -100,7 +100,7 @@ If no attendee info found, return an empty array [].`,
           attendees = result.output.attendees;
         } else if (result.status === "error") {
           // Fallback: try with LLM for unstructured documents
-          const fallback = await base44.integrations.Core.InvokeLLM({
+          const fallback = await appClient.integrations.Core.InvokeLLM({
             prompt: `Extract all attendee information from this document. Look for names, titles/roles, emails, and departments.
 
 Return ONLY a JSON array with this structure:

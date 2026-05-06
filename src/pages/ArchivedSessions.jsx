@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { Archive, Download, ArchiveRestore, Loader2, AlertTriangle, Clock } from "lucide-react";
 
@@ -22,8 +22,8 @@ export default function ArchivedSessions() {
   };
 
   const load = useCallback(async () => {
-    const user = await base44.auth.me();
-    const archived = await base44.entities.Session.filter({ user_email: user.email, storage_tier: 'archived' }, '-archived_at');
+    const user = await appClient.auth.me();
+    const archived = await appClient.entities.Session.filter({ user_email: user.email, storage_tier: 'archived' }, '-archived_at');
     setSessions(archived.filter(s => !s.is_subsession));
     setLoading(false);
   }, []);
@@ -38,7 +38,7 @@ export default function ArchivedSessions() {
       const retrieving = sessions.filter(s => s.restore_status === 'retrieving');
       if (retrieving.length === 0) return;
       for (const s of retrieving) {
-        const updated = await base44.entities.Session.get(s.id);
+        const updated = await appClient.entities.Session.get(s.id);
         if (updated.restore_status === 'restored' || updated.storage_tier === 'hot') {
           setSessions(prev => prev.filter(p => p.id !== s.id));
           showToast(`✅ "${s.title}" has been restored to active sessions!`);
@@ -50,7 +50,7 @@ export default function ArchivedSessions() {
 
   const handleRestore = async (session) => {
     setActionId(session.id);
-    await base44.entities.Session.update(session.id, {
+    await appClient.entities.Session.update(session.id, {
       restore_status: 'retrieving',
       restore_requested_at: new Date().toISOString(),
     });
@@ -62,7 +62,7 @@ export default function ArchivedSessions() {
   const handleDownload = async (session) => {
     setDownloadingId(session.id);
     try {
-      const res = await base44.functions.invoke('downloadSessionPackage', { session_id: session.id });
+      const res = await appClient.functions.invoke('downloadSessionPackage', { session_id: session.id });
       const pkg = res.data;
       if (!pkg?.success) throw new Error('Failed to get session data');
 

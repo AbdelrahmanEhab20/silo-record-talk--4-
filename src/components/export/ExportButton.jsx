@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/lib/ThemeContext";
 import { Download, Check } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { jsPDF } from "jspdf";
 import { Document, Packer, Paragraph, HeadingLevel } from "docx";
 
@@ -15,7 +15,7 @@ export default function ExportButton({ selections, sessionId }) {
     setIsExporting(true);
     try {
       // Fetch session data
-      const sessions = await base44.entities.Session.list("-created_date", 100);
+      const sessions = await appClient.entities.Session.list("-created_date", 100);
       const session = sessions.find(s => s.id === sessionId);
       
       if (!session) {

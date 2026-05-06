@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, User, Calendar, MessageSquare, ThumbsUp, HelpCircle, Lightbulb, AlertCircle, Users, Plus, X, ArrowRight, Pencil, Check, ScanSearch, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import AttendeeCard from "./AttendeeCard";
 import AttendeeImport from "./AttendeeImport";
 import SpeakerIdentificationPanel from "./SpeakerIdentificationPanel";
@@ -338,7 +338,7 @@ export default function StructuredMinutes({ data, onDataChange, readonly = false
     for (let i = 0; i < text.length; i += CHUNK_SIZE) chunks.push(text.slice(i, i + CHUNK_SIZE));
     return chunks;
   };
-  const summarizeChunkDeep = async (chunk, idx, total) => base44.integrations.Core.InvokeLLM({
+  const summarizeChunkDeep = async (chunk, idx, total) => appClient.integrations.Core.InvokeLLM({
     prompt: `Extract detailed notes from part ${idx + 1} of ${total} of a meeting transcript. Preserve EVERY topic, decision, action item, quote, fact, number, and name mentioned. Be granular and comprehensive — these notes will feed a deep-detail report.
 
 TRANSCRIPT CHUNK:
@@ -351,7 +351,7 @@ ${chunk}`,
     const summaries = await Promise.all(chunks.map((c, i) => summarizeChunkDeep(c, i, chunks.length)));
     const combined = summaries.join("\n\n---\n\n");
     if (combined.length > CHUNK_SIZE * 2) {
-      return base44.integrations.Core.InvokeLLM({
+      return appClient.integrations.Core.InvokeLLM({
         prompt: `Consolidate these chunk summaries into ONE exhaustive summary preserving ALL key points, decisions, action items, facts, and speaker contributions:\n\n${combined}`,
       });
     }
@@ -371,7 +371,7 @@ ${chunk}`,
     // ── FIRST TIME: run AI deep analysis ─────────────────────────────────
     setDiggingDeeper(true);
     const processedText = await getProcessedTranscript(transcript);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       model: "gpt_5",
       prompt: `You are a senior meeting analyst. Produce a DEEPLY DETAILED analysis of this meeting.
 
@@ -425,7 +425,7 @@ Be exhaustive. Use real names. Include direct references to what was said. No va
     if (!transcript) return;
     setScanningDecisions(true);
     const existing = (data.decisions || []).join("; ");
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `Scan this meeting transcript for ALL decisions, agreements, and conclusions that were made.
 
 EXISTING DECISIONS (already found — do NOT repeat):

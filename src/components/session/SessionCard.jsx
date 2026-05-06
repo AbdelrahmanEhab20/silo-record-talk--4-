@@ -5,7 +5,7 @@ import { createPageUrl } from "@/utils";
 import { Mic, Check, Trash2, Flag, Loader2, Archive, Link2, Upload, Image, Type } from "lucide-react";
 import FolderBadge from "@/components/FolderBadge";
 import { format, isValid } from "date-fns";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { SESSION_TYPES } from "@/lib/sessionTypes";
 
@@ -24,7 +24,7 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     setArchiving(true);
     const now = new Date().toISOString();
     const deletionAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    await base44.entities.Session.update(session.id, {
+    await appClient.entities.Session.update(session.id, {
       storage_tier: 'archived',
       archived_at: now,
       scheduled_deletion_at: deletionAt,
@@ -39,7 +39,7 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     if (!window.confirm('Delete this session? This cannot be undone.')) return;
     setDeleting(true);
     try {
-      await base44.entities.Session.delete(session.id);
+      await appClient.entities.Session.delete(session.id);
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
     } catch (err) {
       console.error('Delete failed:', err);
@@ -54,7 +54,7 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     e.stopPropagation();
     if (flagging) return;
     setFlagging(true);
-    await base44.entities.Session.update(session.id, { is_flagged: !session.is_flagged });
+    await appClient.entities.Session.update(session.id, { is_flagged: !session.is_flagged });
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     setFlagging(false);
   };

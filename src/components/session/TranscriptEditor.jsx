@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { Search, X, Clock, User, ChevronDown, ChevronUp, Check, Star, Loader2, Copy, Download } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { usePlayback } from "@/lib/PlaybackContext";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ export default function TranscriptEditor({
     if (!lines.length || !onSyncHighlights) return;
     setSyncing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are a meeting assistant. Based on the following highlighted transcript excerpts, generate 2-4 concise summary bullet points that capture the key insights. Return only the bullet points, each starting with "• ".
 
 Highlighted excerpts:

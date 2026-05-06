@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/lib/ThemeContext";
 import { X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 export default function PreviewModal({ sessionId, onClose }) {
   const { isDark } = useTheme();
@@ -13,7 +13,7 @@ export default function PreviewModal({ sessionId, onClose }) {
     const fetchSession = async () => {
       if (!sessionId) return;
       try {
-        const response = await base44.entities.Session.filter({ id: sessionId }, "-created_date", 1);
+        const response = await appClient.entities.Session.filter({ id: sessionId }, "-created_date", 1);
         if (response.length > 0) {
           setSessionData(response[0]);
         }

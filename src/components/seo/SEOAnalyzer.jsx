@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { Loader2, AlertCircle, CheckCircle, TrendingUp } from "lucide-react";
 
@@ -19,7 +19,7 @@ export default function SEOAnalyzer() {
     setLoading(true);
     setResult(null);
 
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are an expert SEO auditor. Analyze this page content and return a detailed SEO audit.
 
 URL: ${url || "Not provided"}

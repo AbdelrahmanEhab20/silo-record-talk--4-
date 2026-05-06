@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Copy, Check, Loader2, Link as LinkIcon } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -18,7 +18,7 @@ export default function ShareLinkModal({ session, onClose }) {
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", session.id],
     queryFn: async () => {
-      return base44.entities.PublicSessionShare.filter({ session_id: session.id });
+      return appClient.entities.PublicSessionShare.filter({ session_id: session.id });
     },
   });
 
@@ -26,7 +26,7 @@ export default function ShareLinkModal({ session, onClose }) {
   const createShareMutation = useMutation({
     mutationFn: async () => {
       const shareCode = generateShareCode();
-      return base44.entities.PublicSessionShare.create({
+      return appClient.entities.PublicSessionShare.create({
         session_id: session.id,
         owner_email: session.user_email,
         share_code: shareCode,
@@ -41,7 +41,7 @@ export default function ShareLinkModal({ session, onClose }) {
   // Delete share mutation
   const deleteShareMutation = useMutation({
     mutationFn: async (shareId) => {
-      return base44.entities.PublicSessionShare.delete(shareId);
+      return appClient.entities.PublicSessionShare.delete(shareId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shares", session.id] });

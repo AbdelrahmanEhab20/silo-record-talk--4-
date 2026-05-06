@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { X, Loader2, TrendingUp, TrendingDown, Minus, Lightbulb, BarChart3, MessageCircle, Zap } from "lucide-react";
 
 const SENTIMENT_COLORS = {
@@ -28,7 +28,7 @@ export default function SentimentTimeline({ transcript, onClose }) {
   const analyze = async () => {
     setLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Analyze this meeting transcript comprehensively. Return structured JSON with sentiment timeline, topics, speaker analysis, and key insights.
 
   Transcript:

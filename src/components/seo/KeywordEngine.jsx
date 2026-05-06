@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { Search, Loader2, Plus, Target, TrendingUp, Zap } from "lucide-react";
 
@@ -34,7 +34,7 @@ export default function KeywordEngine() {
     if (!seed.trim()) return;
     setLoading(true);
     setKeywords([]);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are an expert SEO strategist. Generate a comprehensive keyword research report for the seed keyword: "${seed}" in language: ${lang === "ar" ? "Arabic" : "English"}.
 
 The app context: SILO is an AI-powered voice recording and meeting notes SaaS.
@@ -80,7 +80,7 @@ Prioritize high-conversion, low-difficulty long-tail keywords. Include question-
 
   const saveKeyword = async (kw) => {
     setSaving(kw.keyword);
-    await base44.entities.Keyword.create({ ...kw, status: "researched" });
+    await appClient.entities.Keyword.create({ ...kw, status: "researched" });
     setSaved(prev => ({ ...prev, [kw.keyword]: true }));
     setSaving(null);
   };

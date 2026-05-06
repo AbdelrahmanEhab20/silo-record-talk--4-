@@ -17,13 +17,13 @@ export default function FeatureAISection({ settings, onChange, providers, isDark
   const enabledProviders = (providers || []).filter(p => p.enabled);
 
   const allProviderOptions = [
-    { value: "base44", label: "Base44 Built-in LLM (default)" },
+    { value: "builtin", label: "Built-in Built-in LLM (default)" },
     ...enabledProviders.map(p => ({ value: p.id, label: p.name || p.type })),
   ];
 
   // For transcription features, also offer OpenAI Whisper if OPENAI_API_KEY is configured
   const transcriptionOptions = [
-    { value: "base44", label: "Base44 InvokeLLM (audio vision)" },
+    { value: "builtin", label: "Built-in InvokeLLM (audio vision)" },
     { value: "openai_whisper", label: "OpenAI Whisper (requires OPENAI_API_KEY secret)" },
     ...enabledProviders.filter(p => p.type === "openai" || p.type === "groq").map(p => ({
       value: p.id,
@@ -37,7 +37,7 @@ export default function FeatureAISection({ settings, onChange, providers, isDark
       : "bg-gray-50 border-gray-200 text-gray-900 focus:border-purple-400 [color-scheme:light]"
   }`;
 
-  const getFeatureValue = (key) => settings?.[key]?.primary || "base44";
+  const getFeatureValue = (key) => settings?.[key]?.primary || "builtin";
   const setFeatureValue = (key, value) => {
     onChange({ ...settings, [key]: { primary: value, fallback: null } });
   };
@@ -77,7 +77,7 @@ export default function FeatureAISection({ settings, onChange, providers, isDark
             </div>
             {isWhisper && (
               <div className={`mt-2 px-3 py-1.5 rounded-lg text-xs ${isDark ? "bg-amber-500/10 text-amber-300" : "bg-amber-50 text-amber-700"}`}>
-                ⚠️ Requires <code className="font-mono">OPENAI_API_KEY</code> secret to be set in Base44 dashboard → Secrets.
+                ⚠️ Requires <code className="font-mono">OPENAI_API_KEY</code> secret to be set in Built-in dashboard → Secrets.
               </div>
             )}
           </div>

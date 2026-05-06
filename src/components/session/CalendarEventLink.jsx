@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useMutation } from "@tanstack/react-query";
 import { Calendar, ChevronDown, ChevronUp, X, Plus, Loader2, Link2, ExternalLink, Download } from "lucide-react";
 import { format } from "date-fns";
@@ -158,7 +158,7 @@ export default function CalendarEventLink({ session, sessionId, onUpdated }) {
           ? new Date(data.calendar_event_date).toISOString()
           : null,
       };
-      return await base44.entities.Session.update(sessionId, payload);
+      return await appClient.entities.Session.update(sessionId, payload);
     },
     onMutate: async (data) => {
       setForm((f) => ({ ...f, ...data }));
@@ -171,7 +171,7 @@ export default function CalendarEventLink({ session, sessionId, onUpdated }) {
 
   const unlinkMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.Session.update(sessionId, {
+      return await appClient.entities.Session.update(sessionId, {
         calendar_event_title: null,
         calendar_event_date: null,
         calendar_event_location: null,

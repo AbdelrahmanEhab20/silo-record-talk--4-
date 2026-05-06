@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FlickitAd1, FlickitAd2, FlickitAd3 } from '@/components/ads/FlickitAds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, CheckCircle, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 
 const AD_DURATION = 15;
 
@@ -130,7 +130,7 @@ export default function WatchAdModal({ onClose, onRewarded }) {
   const handleFinish = async () => {
     setPhase('rewarding');
     try {
-      await base44.functions.invoke('rewardAdMinutes', {});
+      await appClient.functions.invoke('rewardAdMinutes', {});
       setPhase('done');
       setTimeout(() => {
         onRewarded();

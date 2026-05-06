@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Loader2, X, CheckCircle2 } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,10 +13,10 @@ export default function ProcessingBanner({ compact = false }) {
 
   const fetchPending = async () => {
     try {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       if (!user) return;
       // Fetch all sessions that are currently processing
-      const allSessions = await base44.entities.Session.filter({ user_email: user.email }, '-created_date');
+      const allSessions = await appClient.entities.Session.filter({ user_email: user.email }, '-created_date');
       const pending = allSessions.filter(
         s => (s.processing_status === 'pending' || s.processing_status === 'processing') && !dismissed.includes(s.id)
       );
@@ -31,7 +31,7 @@ export default function ProcessingBanner({ compact = false }) {
   }, [dismissed]);
 
   useEffect(() => {
-    const unsub = base44.entities.Session.subscribe((event) => {
+    const unsub = appClient.entities.Session.subscribe((event) => {
       if (event.type === 'create' && event.data?.processing_status === 'pending') {
         fetchPending();
       }

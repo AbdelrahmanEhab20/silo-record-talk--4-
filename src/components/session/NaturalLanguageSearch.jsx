@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Search, Loader2, X, Lightbulb } from "lucide-react";
 
 export default function NaturalLanguageSearch({ transcript, onClose }) {
@@ -16,7 +16,7 @@ export default function NaturalLanguageSearch({ transcript, onClose }) {
     setResults(null);
 
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are a meeting transcript search assistant. Answer the user's question based on the transcript below.
 
 User Question: ${query}

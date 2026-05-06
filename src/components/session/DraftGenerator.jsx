@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Mail, Hash, Loader2, Copy, Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 const FORMATS = [
@@ -44,7 +44,7 @@ ${content.slice(0, 3000)}`,
     };
 
     try {
-      const result = await base44.integrations.Core.InvokeLLM({ prompt: prompts[selectedFormat] });
+      const result = await appClient.integrations.Core.InvokeLLM({ prompt: prompts[selectedFormat] });
       setDraft(result);
       setExpanded(true);
     } catch (e) {

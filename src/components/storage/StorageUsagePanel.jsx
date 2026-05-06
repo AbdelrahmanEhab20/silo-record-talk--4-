@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Archive, HardDrive, Loader2, ArchiveRestore, ChevronDown } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
 
@@ -16,8 +16,8 @@ export default function StorageUsagePanel() {
 
   useEffect(() => {
     const load = async () => {
-      const user = await base44.auth.me();
-      const all = await base44.entities.Session.filter({ user_email: user.email }, "-created_date", 300);
+      const user = await appClient.auth.me();
+      const all = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date", 300);
       setSessions(all.filter(s => !s.is_subsession));
       setLoading(false);
     };
@@ -43,7 +43,7 @@ export default function StorageUsagePanel() {
     setArchivingId(session.id);
     const now = new Date();
     const deletionAt = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    await base44.entities.Session.update(session.id, {
+    await appClient.entities.Session.update(session.id, {
       storage_tier: 'archived',
       archived_at: now.toISOString(),
       scheduled_deletion_at: deletionAt,

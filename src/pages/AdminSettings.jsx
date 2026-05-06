@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import LLMProvidersSection from "@/components/admin/LLMProvidersSection";
 import FreePlanSettings from "@/components/admin/FreePlanSettings";
@@ -14,14 +14,14 @@ const SETTING_KEY = "global";
 const DEFAULT_SETTINGS = {
   setting_key: SETTING_KEY,
   llm_providers: [],
-  live_transcription: { primary: "browser_native", fallback: "base44" },
-  chunk_processing: { primary: "base44", fallback: null },
-  ai_analysis: { primary: "base44", fallback: null },
-  full_retranscription: { primary: "base44", fallback: null },
-  video_url_processing: { primary: "base44", fallback: null },
-  audio_upload_processing: { primary: "base44", fallback: null },
-  image_processing: { primary: "base44", fallback: null },
-  text_processing: { primary: "base44", fallback: null },
+  live_transcription: { primary: "browser_native", fallback: "builtin" },
+  chunk_processing: { primary: "builtin", fallback: null },
+  ai_analysis: { primary: "builtin", fallback: null },
+  full_retranscription: { primary: "builtin", fallback: null },
+  video_url_processing: { primary: "builtin", fallback: null },
+  audio_upload_processing: { primary: "builtin", fallback: null },
+  image_processing: { primary: "builtin", fallback: null },
+  text_processing: { primary: "builtin", fallback: null },
   free_plan_limits: {},
   pro_plan_limits: {},
 };
@@ -51,10 +51,10 @@ export default function AdminSettings() {
   useEffect(() => {
     const init = async () => {
       try {
-        const user = await base44.auth.me();
+        const user = await appClient.auth.me();
         if (user?.role !== "admin") { setIsAdmin(false); setLoading(false); return; }
         setIsAdmin(true);
-        const records = await base44.entities.AISettings.filter({ setting_key: SETTING_KEY });
+        const records = await appClient.entities.AISettings.filter({ setting_key: SETTING_KEY });
         if (records.length > 0) {
           setSettingsId(records[0].id);
           setSettings({ ...DEFAULT_SETTINGS, ...records[0] });
@@ -71,9 +71,9 @@ export default function AdminSettings() {
     setSaving(true);
     try {
       if (settingsId) {
-        await base44.entities.AISettings.update(settingsId, settings);
+        await appClient.entities.AISettings.update(settingsId, settings);
       } else {
-        const created = await base44.entities.AISettings.create(settings);
+        const created = await appClient.entities.AISettings.create(settings);
         setSettingsId(created.id);
       }
       setSavedMsg(true);
@@ -167,7 +167,7 @@ export default function AdminSettings() {
                   <div className="text-left">
                     <p className={`text-sm font-semibold ${textMain}`}>LLM Provider Integrations</p>
                     <p className={`text-xs ${textSub}`}>
-                      {providers.length === 0 ? "No custom providers yet — Base44 built-in is always available" : `${providers.length} custom provider${providers.length > 1 ? "s" : ""} configured`}
+                      {providers.length === 0 ? "No custom providers yet — built-in provider is always available" : `${providers.length} custom provider${providers.length > 1 ? "s" : ""} configured`}
                     </p>
                   </div>
                 </div>

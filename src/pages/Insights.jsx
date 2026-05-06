@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import {
   Folder, Sparkles, Loader2, ChevronRight, CheckSquare,
   BarChart2, AlertCircle, TrendingUp, Users, MessageSquare,
@@ -95,11 +95,11 @@ export default function Insights() {
 
   useEffect(() => {
     const init = async () => {
-      const me = await base44.auth.me();
+      const me = await appClient.auth.me();
       setUser(me);
       const [allSessions, allReports] = await Promise.all([
-        base44.entities.Session.filter({ user_email: me.email }, "-created_date"),
-        base44.entities.FolderReport.filter({ user_email: me.email }, "-created_date"),
+        appClient.entities.Session.filter({ user_email: me.email }, "-created_date"),
+        appClient.entities.FolderReport.filter({ user_email: me.email }, "-created_date"),
       ]);
       const nonSub = allSessions.filter(s => !s.is_subsession);
       setSessions(nonSub);
@@ -144,7 +144,7 @@ export default function Insights() {
     setGenerating(folderName);
     setError(null);
     try {
-      const res = await base44.functions.invoke("generateInsights", {
+      const res = await appClient.functions.invoke("generateInsights", {
         folder_name: folderName,
         session_ids: effectiveSessions.map(s => s.id),
       });
@@ -154,7 +154,7 @@ export default function Insights() {
       const existing = cachedReports[folderName];
       let saved;
       if (existing?.id) {
-        saved = await base44.entities.FolderReport.update(existing.id, {
+        saved = await appClient.entities.FolderReport.update(existing.id, {
           report_data: data,
           session_count: effectiveSessions.length,
           session_ids: effectiveSessions.map(s => s.id),
@@ -163,7 +163,7 @@ export default function Insights() {
         });
         saved = { ...existing, report_data: data, generated_at: now };
       } else {
-        saved = await base44.entities.FolderReport.create({
+        saved = await appClient.entities.FolderReport.create({
           user_email: user.email,
           folder_name: folderName,
           report_data: data,

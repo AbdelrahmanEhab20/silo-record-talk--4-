@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, Loader2, Mic } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import StructuredMinutes from "./StructuredMinutes";
 import ExportShare from "./ExportShare";
 import TranscriptQualityWarning from "./TranscriptQualityWarning";
@@ -43,7 +43,7 @@ export default function SummarySection({ session, sessionId, summary, transcript
     if (!audioUrl) return;
     setTranscribing(true);
     try {
-      const response = await base44.functions.invoke('transcribeAudio', { audio_url: audioUrl, session_id: sessionId });
+      const response = await appClient.functions.invoke('transcribeAudio', { audio_url: audioUrl, session_id: sessionId });
       const data = response.data;
       if (data?.status === 'processing') {
         // AssemblyAI job submitted asynchronously — UI will update via polling in SessionDetail
@@ -52,7 +52,7 @@ export default function SummarySection({ session, sessionId, summary, transcript
       }
       const text = data?.transcript;
       if (!text) throw new Error("No transcript returned");
-      await base44.entities.Session.update(sessionId, { transcript_text: text });
+      await appClient.entities.Session.update(sessionId, { transcript_text: text });
       if (onTranscriptGenerated) onTranscriptGenerated(text);
       setTranscribing(false);
       await generateSummaryFromText(text);
@@ -66,7 +66,7 @@ export default function SummarySection({ session, sessionId, summary, transcript
     try {
       const lang = detectLanguage(transcriptText);
       const langNote = lang === 'ar' ? 'Write the title in Arabic.' : 'Write the title in English.';
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Based on the meeting transcript and summary below, generate a concise, descriptive title that represents the main topic of the meeting. The title should be:
 - 3-8 words
 - Descriptive and meaningful
@@ -83,7 +83,7 @@ ${summaryText.slice(0, 1500)}`
       });
       const title = typeof result === "string" ? result.trim() : result;
       if (title && title.length > 0 && title.length < 100) {
-        await base44.entities.Session.update(sessionId, { title });
+        await appClient.entities.Session.update(sessionId, { title });
         return title;
       }
     } catch (e) {
@@ -156,7 +156,7 @@ useEffect(() => {
     if (!audioUrl) return;
     setRetrying(true);
     try {
-      const response = await base44.functions.invoke('transcribeAudio', { audio_url: audioUrl });
+      const response = await appClient.functions.invoke('transcribeAudio', { audio_url: audioUrl });
       const text = response.data?.transcript;
       if (!text) throw new Error('No transcript returned');
       
@@ -169,7 +169,7 @@ useEffect(() => {
       }
       
       // Quality is good, save and generate summary
-      await base44.entities.Session.update(sessionId, { transcript_text: text });
+      await appClient.entities.Session.update(sessionId, { transcript_text: text });
       if (onTranscriptGenerated) onTranscriptGenerated(text);
       setQualityIssue(null);
       // Auto-generate summary
@@ -212,7 +212,7 @@ useEffect(() => {
       ? 'CRITICAL: The transcript is in Arabic. You MUST write ALL text fields (executive_summary, key_discussions points, detailed_discussions content, decisions, action_items tasks, next_steps, risks, ai_insights, attendee roles and sample_quotes) entirely in Arabic. Do not use English anywhere in the output.'
       : 'Write all text fields in English.';
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are an AI Meeting Intelligence Engine embedded in a mobile app called SILO.
 
 ${langInstruction}
@@ -269,9 +269,9 @@ ${text}`,
       // Save the original summary on first generation
       if (!originalSummary) {
         setOriginalSummary(summaryStr);
-        await base44.entities.Session.update(sessionId, { summary_text: summaryStr, original_summary_text: summaryStr });
+        await appClient.entities.Session.update(sessionId, { summary_text: summaryStr, original_summary_text: summaryStr });
       } else {
-        await base44.entities.Session.update(sessionId, { summary_text: summaryStr });
+        await appClient.entities.Session.update(sessionId, { summary_text: summaryStr });
       }
       onSummaryGenerated(summaryStr);
       setQualityIssue(null);
@@ -362,11 +362,11 @@ Return ONLY the type name, nothing else.
 Transcript: ${transcriptText.slice(0, 2500)}
 Summary: ${summaryText.slice(0, 1000)}`;
 
-      const result = await base44.integrations.Core.InvokeLLM({ prompt });
+      const result = await appClient.integrations.Core.InvokeLLM({ prompt });
       const type = typeof result === "string" ? result.trim() : null;
       const valid = ["Meeting","Lecture","Workshop","Class","Idea","Brainstorm","Strategy","Media interview","Job interview","Press Conference"];
       if (type && valid.includes(type)) {
-        await base44.entities.Session.update(sessionId, { session_type: type });
+        await appClient.entities.Session.update(sessionId, { session_type: type });
       }
     } catch (e) {
       console.error("Session type detection failed", e);
@@ -535,12 +535,12 @@ Summary: ${summaryText.slice(0, 1000)}`;
         originalSummary={originalSummary}
         onDataChange={async (updatedData) => {
           const newText = JSON.stringify(updatedData);
-          await base44.entities.Session.update(sessionId, { summary_text: newText });
+          await appClient.entities.Session.update(sessionId, { summary_text: newText });
           if (onSummaryGenerated) onSummaryGenerated(newText);
         }}
         onRestoreOriginal={async () => {
           if (originalSummary) {
-            await base44.entities.Session.update(sessionId, { summary_text: originalSummary });
+            await appClient.entities.Session.update(sessionId, { summary_text: originalSummary });
             if (onSummaryGenerated) onSummaryGenerated(originalSummary);
           }
         }}

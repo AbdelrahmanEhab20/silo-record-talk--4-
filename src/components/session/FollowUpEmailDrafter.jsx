@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { X, Loader2, Mail, Send, Eye, ArrowLeft, Check, ExternalLink, ChevronDown } from "lucide-react";
 
 // Known mail app URL schemes for mobile deep linking
@@ -144,7 +144,7 @@ export default function FollowUpEmailDrafter({ session, onClose }) {
         setLoading(false);
         return;
       }
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Generate personalized follow-up emails for a meeting. Create one email per participant.
 
 Meeting: ${session.title}

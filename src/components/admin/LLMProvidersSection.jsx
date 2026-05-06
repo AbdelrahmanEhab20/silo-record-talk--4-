@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Eye, EyeOff, CheckCircle2, Circle, ChevronDown, Zap, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 const PROVIDER_TYPES = [
   { value: "openai", label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] },
@@ -35,7 +35,7 @@ export default function LLMProvidersSection({ providers, onChange, isDark, textS
     }
     setTestState(prev => ({ ...prev, [provider.id]: { status: 'testing' } }));
     try {
-      const res = await base44.functions.invoke('testLLMProvider', {
+      const res = await appClient.functions.invoke('testLLMProvider', {
         provider_type: provider.type,
         api_key_secret_name: provider.api_key_secret_name,
         model: provider.default_model,
@@ -72,14 +72,14 @@ export default function LLMProvidersSection({ providers, onChange, isDark, textS
     <div className="space-y-4">
       <p className={`text-xs leading-relaxed ${textSub}`}>
         Add custom LLM providers here. Once added, they'll be available as options across all feature settings below.
-        API keys are stored by secret name — make sure the secret is set in the Base44 dashboard.
+        API keys are stored by secret name — make sure the secret is set in your backend environment.
       </p>
 
-      {/* Built-in Base44 */}
+      {/* Built-in provider */}
       <div className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isDark ? "border-green-500/20 bg-green-500/5" : "border-green-200 bg-green-50"}`}>
         <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
         <div>
-          <p className={`text-sm font-semibold ${textMain}`}>Base44 Built-in LLM</p>
+          <p className={`text-sm font-semibold ${textMain}`}>Built-in LLM</p>
           <p className={`text-xs ${textSub}`}>Always available — no API key required. Used as default for all features.</p>
         </div>
       </div>
@@ -161,7 +161,7 @@ export default function LLMProvidersSection({ providers, onChange, isDark, textS
                   {showKey[provider.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
-              <p className={`text-[10px] mt-1 ${textSub}`}>Must match the secret name set in Base44 dashboard → Secrets. Use ALL_CAPS (e.g. <code>ASSEMBLYAI_API_KEY</code>).</p>
+              <p className={`text-[10px] mt-1 ${textSub}`}>Must match the secret name in your deployment environment. Use ALL_CAPS (e.g. <code>ASSEMBLYAI_API_KEY</code>).</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

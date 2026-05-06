@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, Bot, Zap, CheckSquare, Lightbulb, ArrowRight, BarChart2, User, Calendar, Flag, CircleDot, Clock, TrendingUp, Sparkles, ListChecks } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import FlashcardDisplay from "./FlashcardDisplay";
 import StructuredNotes from "./StructuredNotes";
@@ -84,7 +84,7 @@ export default function AskSilo({ session, transcript, summary, onFlashcardsGene
     setLoading(true);
     const history = messages.map(m => `${m.role === "user" ? "User" : "Silo"}: ${m.text}`).join("\n");
     const prompt = `${buildSystemContext()}\n\nConversation so far:\n${history}\n\nUser: ${userMsg}\n\nSilo:`;
-    const reply = await base44.integrations.Core.InvokeLLM({ prompt });
+    const reply = await appClient.integrations.Core.InvokeLLM({ prompt });
     setMessages(prev => [...prev, { role: "assistant", text: reply }]);
     setLoading(false);
   };
@@ -92,7 +92,7 @@ export default function AskSilo({ session, transcript, summary, onFlashcardsGene
   const generateFlashcards = async () => {
     setGeneratingFlashcards(true);
     try {
-      const response = await base44.functions.invoke('generateFlashcards', {
+      const response = await appClient.functions.invoke('generateFlashcards', {
         transcript,
         summary,
         title: session?.title
@@ -109,7 +109,7 @@ export default function AskSilo({ session, transcript, summary, onFlashcardsGene
   const generateStructuredContent = async () => {
     setGeneratingContent(true);
     try {
-      const response = await base44.functions.invoke('generateStructuredContent', {
+      const response = await appClient.functions.invoke('generateStructuredContent', {
         transcript,
         summary,
         title: session?.title
@@ -461,7 +461,7 @@ export default function AskSilo({ session, transcript, summary, onFlashcardsGene
                     <button
                       key={label}
                       disabled={loading || !transcript}
-                      onClick={() => { setInput(q); setTimeout(() => { setInput(""); setMessages(prev => [...prev, { role: "user", text: q }]); setLoading(true); const history = messages.map(m => `${m.role === "user" ? "User" : "Silo"}: ${m.text}`).join("\n"); base44.integrations.Core.InvokeLLM({ prompt: `${buildSystemContext()}\n\nConversation so far:\n${history}\n\nUser: ${q}\n\nSilo:` }).then(reply => { setMessages(prev => [...prev, { role: "assistant", text: reply }]); setLoading(false); }); }, 0); }}
+                      onClick={() => { setInput(q); setTimeout(() => { setInput(""); setMessages(prev => [...prev, { role: "user", text: q }]); setLoading(true); const history = messages.map(m => `${m.role === "user" ? "User" : "Silo"}: ${m.text}`).join("\n"); appClient.integrations.Core.InvokeLLM({ prompt: `${buildSystemContext()}\n\nConversation so far:\n${history}\n\nUser: ${q}\n\nSilo:` }).then(reply => { setMessages(prev => [...prev, { role: "assistant", text: reply }]); setLoading(false); }); }, 0); }}
                       className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-medium border transition-all disabled:opacity-40 ${isDark ? "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900"}`}
                     >
                       <Icon className="w-3 h-3 shrink-0 text-purple-400" />

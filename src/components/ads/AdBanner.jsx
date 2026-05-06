@@ -3,7 +3,7 @@ import RotatingAdSlot from '@/components/ads/RotatingAdSlot';
 import { useTheme } from '@/lib/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, PlayCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { shouldShowAds } from '@/utils/planConfig';
 
 /**
@@ -24,11 +24,11 @@ export default function AdBanner({ subscription, onMinutesUnlocked, variant = 'b
     // Simulate watching a 5s ad
     await new Promise(r => setTimeout(r, 5000));
     try {
-      const user = await base44.auth.me();
-      const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+      const user = await appClient.auth.me();
+      const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
       if (subs.length > 0) {
         const current = subs[0];
-        await base44.entities.PlanSubscription.update(current.id, {
+        await appClient.entities.PlanSubscription.update(current.id, {
           daily_bonus_minutes: (current.daily_bonus_minutes || 0) + 10,
         });
         setUnlocked(true);

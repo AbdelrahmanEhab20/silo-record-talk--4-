@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { Loader2, FileText, Copy, Check, Save } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -38,7 +38,7 @@ Include a table of contents, deep coverage of subtopics, internal linking anchor
 Format in Markdown. This should be the definitive resource on the topic.`,
     };
 
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await appClient.integrations.Core.InvokeLLM({
       prompt: `${typePrompts[type]}
 
 App context: SILO is an AI-powered voice recording, meeting notes, and transcription SaaS for Arabic and English speakers.
@@ -81,7 +81,7 @@ Return JSON with:
   const save = async () => {
     if (!result) return;
     setSaving(true);
-    await base44.entities.SEOPage.create({
+    await appClient.entities.SEOPage.create({
       title: result.title,
       meta_description: result.meta_description,
       h1: result.h1,

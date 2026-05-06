@@ -5,8 +5,8 @@ import { FlickitAd1, FlickitAd2, FlickitAd3 } from '@/components/ads/FlickitAds'
 
 const DOWNLOAD_URL = 'https://flickit.me/downloadflickit';
 
-const FLICKIT_ICON = 'https://media.base44.com/images/public/6996947e358dd648b0520980/95b5f6984_White.png';
-const SILO_ICON = 'https://media.base44.com/images/public/6996947e358dd648b0520980/516955f86_Silologopng-icon.png';
+const FLICKIT_ICON = 'https://media.appClient.com/images/public/6996947e358dd648b0520980/95b5f6984_White.png';
+const SILO_ICON = 'https://media.appClient.com/images/public/6996947e358dd648b0520980/516955f86_Silologopng-icon.png';
 
 const MINI_ADS = [
   { key: 'flickit1', bg: 'linear-gradient(135deg, #06B6D4, #3B82F6)', icon: FLICKIT_ICON, title: 'Flickit', body: 'Share contacts instantly with a flick!', link: DOWNLOAD_URL },

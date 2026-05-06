@@ -6,7 +6,7 @@ function buildOptions(providers, includeBrowserNative) {
   if (includeBrowserNative) {
     opts.push({ value: "browser_native", label: "🌐 Browser Native (Web Speech API)" });
   }
-  opts.push({ value: "base44", label: "⚡ Base44 Built-in LLM (default)" });
+  opts.push({ value: "builtin", label: "⚡ Built-in Built-in LLM (default)" });
   providers.filter(p => p.enabled && p.name).forEach(p => {
     opts.push({ value: p.id, label: `🔌 ${p.name} (${p.default_model || p.type})` });
   });
@@ -51,7 +51,7 @@ export default function FeatureLLMSection({
           <div className="relative">
             <select
               className={selectCls}
-              value={value.primary || "base44"}
+              value={value.primary || "builtin"}
               onChange={e => onChange({ ...value, primary: e.target.value })}
             >
               {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -102,7 +102,7 @@ export default function FeatureLLMSection({
 }
 
 function getLabelShort(key, providers) {
-  if (key === "base44") return "Base44 LLM";
+  if (key === "builtin") return "Built-in LLM";
   if (key === "browser_native") return "Browser Native";
   const p = providers.find(p => p.id === key);
   return p ? p.name : key;

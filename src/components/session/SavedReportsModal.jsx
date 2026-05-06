@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Loader2, Trash2, ChevronRight, Clock, Folder } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 
 export default function SavedReportsModal({ user, sessions, onOpenReport, onClose }) {
@@ -18,7 +18,7 @@ export default function SavedReportsModal({ user, sessions, onOpenReport, onClos
     const load = async () => {
       if (!user?.email) return;
       setLoading(true);
-      const data = await base44.entities.FolderReport.filter({ user_email: user.email }, "-created_date", 50);
+      const data = await appClient.entities.FolderReport.filter({ user_email: user.email }, "-created_date", 50);
       setReports(data);
       setLoading(false);
     };
@@ -28,7 +28,7 @@ export default function SavedReportsModal({ user, sessions, onOpenReport, onClos
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     setDeleting(id);
-    await base44.entities.FolderReport.delete(id);
+    await appClient.entities.FolderReport.delete(id);
     setReports(prev => prev.filter(r => r.id !== id));
     setDeleting(null);
   };

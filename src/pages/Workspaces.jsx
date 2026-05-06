@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Plus, Users, Trash2, UserPlus, X, ChevronRight, FileText, Loader2, Crown, Check } from "lucide-react";
@@ -19,42 +19,42 @@ export default function Workspaces() {
 
   const { data: user } = useQuery({
     queryKey: ["me"],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => appClient.auth.me(),
   });
 
   const { data: myWorkspaces = [], isLoading } = useQuery({
     queryKey: ["workspaces", user?.email],
-    queryFn: () => base44.entities.Workspace.filter({ owner_email: user.email }),
+    queryFn: () => appClient.entities.Workspace.filter({ owner_email: user.email }),
     enabled: !!user,
   });
 
   const { data: memberOf = [] } = useQuery({
     queryKey: ["workspace-memberships", user?.email],
-    queryFn: () => base44.entities.WorkspaceMember.filter({ user_email: user.email, status: "active" }),
+    queryFn: () => appClient.entities.WorkspaceMember.filter({ user_email: user.email, status: "active" }),
     enabled: !!user,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ["workspace-members", selectedWorkspace?.id],
-    queryFn: () => base44.entities.WorkspaceMember.filter({ workspace_id: selectedWorkspace.id }),
+    queryFn: () => appClient.entities.WorkspaceMember.filter({ workspace_id: selectedWorkspace.id }),
     enabled: !!selectedWorkspace,
   });
 
   const { data: sharedSessions = [] } = useQuery({
     queryKey: ["shared-sessions", selectedWorkspace?.id],
-    queryFn: () => base44.entities.SharedSession.filter({ workspace_id: selectedWorkspace.id }),
+    queryFn: () => appClient.entities.SharedSession.filter({ workspace_id: selectedWorkspace.id }),
     enabled: !!selectedWorkspace,
   });
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setCreating(true);
-    const ws = await base44.entities.Workspace.create({
+    const ws = await appClient.entities.Workspace.create({
       name: newName.trim(),
       description: newDesc.trim(),
       owner_email: user.email,
     });
-    await base44.entities.WorkspaceMember.create({
+    await appClient.entities.WorkspaceMember.create({
       workspace_id: ws.id,
       user_email: user.email,
       role: "owner",
@@ -74,7 +74,7 @@ export default function Workspaces() {
     const email = inviteEmail.trim().toLowerCase();
 
     // Create workspace membership record
-    await base44.entities.WorkspaceMember.create({
+    await appClient.entities.WorkspaceMember.create({
       workspace_id: selectedWorkspace.id,
       user_email: email,
       role: "member",
@@ -83,14 +83,14 @@ export default function Workspaces() {
 
     // Invite user to the app (sends platform invite email)
     try {
-      await base44.users.inviteUser(email, "user");
+      await appClient.users.inviteUser(email, "user");
     } catch (e) {
       // User may already exist — that's fine
     }
 
     // Send a custom invite email from Silo
     try {
-      await base44.integrations.Core.SendEmail({
+      await appClient.integrations.Core.SendEmail({
         to: email,
         subject: `You've been invited to "${selectedWorkspace.name}" on Silo AI Notes`,
         from_name: "Silo AI Notes",
@@ -118,13 +118,13 @@ The Silo Team`,
   };
 
   const handleRemoveMember = async (memberId) => {
-    await base44.entities.WorkspaceMember.delete(memberId);
+    await appClient.entities.WorkspaceMember.delete(memberId);
     queryClient.invalidateQueries({ queryKey: ["workspace-members"] });
   };
 
   const handleDeleteWorkspace = async (wsId) => {
     if (!window.confirm("Delete this workspace? This cannot be undone.")) return;
-    await base44.entities.Workspace.delete(wsId);
+    await appClient.entities.Workspace.delete(wsId);
     queryClient.invalidateQueries({ queryKey: ["workspaces"] });
     if (selectedWorkspace?.id === wsId) setSelectedWorkspace(null);
   };

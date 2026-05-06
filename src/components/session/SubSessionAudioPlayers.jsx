@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import AudioPlayer from "./AudioPlayer";
 import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import AudioDownloadMenu from "./AudioDownloadMenu";
 
 const isTruncatedPreview = (text) => {
@@ -19,9 +19,9 @@ export default function SubSessionAudioPlayers({ sessionId, subsessions, onTrans
     if (!sub.audio_file_url) return;
     setRetranscribing(prev => ({ ...prev, [sub.id]: true }));
     try {
-      await base44.entities.Session.update(sub.id, { processing_status: 'pending' });
+      await appClient.entities.Session.update(sub.id, { processing_status: 'pending' });
       // force_transcribe: true ensures Whisper re-runs AND diarization runs on result
-      await base44.functions.invoke('processSessionBackground', { session_id: sub.id, force_transcribe: true });
+      await appClient.functions.invoke('processSessionBackground', { session_id: sub.id, force_transcribe: true });
       if (onTranscriptUpdated) onTranscriptUpdated(sub.id);
     } catch (e) {
       console.warn('Re-transcribe failed:', e);

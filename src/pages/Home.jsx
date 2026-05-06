@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -52,10 +52,10 @@ export default function Home() {
   useEffect(() => {
     const initUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await appClient.auth.me();
         setUser(userData);
-        await base44.functions.invoke('initializeUserSubscription', {});
-        const subs = await base44.entities.PlanSubscription.filter({ user_email: userData.email });
+        await appClient.functions.invoke('initializeUserSubscription', {});
+        const subs = await appClient.entities.PlanSubscription.filter({ user_email: userData.email });
         if (subs.length > 0) setSubscription(subs[0]);
         setSessionsLoaded(true);
       } catch (error) {
@@ -114,7 +114,7 @@ export default function Home() {
     queryKey: ["sessions-total"],
     queryFn: async () => {
       if (!user) return [];
-      const allUserSessions = await base44.entities.Session.filter({ user_email: user.email }, "-created_date");
+      const allUserSessions = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
       setTotalSessions(allUserSessions);
       return allUserSessions;
     },
@@ -128,7 +128,7 @@ export default function Home() {
   // Real-time subscription: instantly update sessions & refresh folders
   useEffect(() => {
     if (!user) return;
-    const unsub = base44.entities.Session.subscribe((event) => {
+    const unsub = appClient.entities.Session.subscribe((event) => {
       if (event.type === 'create') {
         setTotalSessions(prev => [event.data, ...prev]);
       } else if (event.type === 'update') {
@@ -172,7 +172,7 @@ export default function Home() {
   const deleteSelected = async () => {
     if (selected.size === 0) return;
     setDeleting(true);
-    await Promise.all([...selected].map((id) => base44.entities.Session.delete(id)));
+    await Promise.all([...selected].map((id) => appClient.entities.Session.delete(id)));
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     cancelSelect();
     setDeleting(false);
@@ -181,7 +181,7 @@ export default function Home() {
   const moveSelectedToFolder = async (folderName) => {
     if (selected.size === 0) return;
     setMovingToFolder(true);
-    await Promise.all([...selected].map((id) => base44.entities.Session.update(id, { folder: folderName || null })));
+    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, { folder: folderName || null })));
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     setMovingToFolder(false);
     setMoveToFolderOpen(false);
@@ -192,7 +192,7 @@ export default function Home() {
     if (selected.size === 0) return;
     const now = new Date().toISOString();
     const deletionAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    await Promise.all([...selected].map((id) => base44.entities.Session.update(id, {
+    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, {
       storage_tier: 'archived',
       archived_at: now,
       scheduled_deletion_at: deletionAt,
@@ -206,7 +206,7 @@ export default function Home() {
     // If all selected are flagged, unflag them; otherwise flag all
     const selectedSessions = totalSessions.filter(s => selected.has(s.id));
     const allFlagged = selectedSessions.every(s => s.is_flagged);
-    await Promise.all([...selected].map((id) => base44.entities.Session.update(id, { is_flagged: !allFlagged })));
+    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, { is_flagged: !allFlagged })));
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     cancelSelect();
   };
@@ -245,7 +245,7 @@ export default function Home() {
 
   const handleRefresh = async () => {
     setPage(1);
-    const allUserSessions = await base44.entities.Session.filter({ user_email: user.email }, "-created_date");
+    const allUserSessions = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
     setTotalSessions(allUserSessions);
   };
 

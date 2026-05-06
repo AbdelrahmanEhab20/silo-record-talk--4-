@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const ACCEPTED = ".mp3,.wav,.m4a,.webm,.ogg,.aac";
@@ -35,17 +35,17 @@ export default function AudioUploader({ sessionId, onTranscriptReady, onAudioUpl
       });
 
       // 2. Upload to storage
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       onAudioUploaded?.(file_url);
 
       // 3. Transcribe via Whisper backend function
       setStage("transcribing");
-      const res = await base44.functions.invoke("transcribeAudio", { audio_url: file_url });
+      const res = await appClient.functions.invoke("transcribeAudio", { audio_url: file_url });
       const transcript = res.data?.transcript;
       if (!transcript) throw new Error("No transcript returned");
 
       // 4. Save transcript + audio url + duration to session
-      await base44.entities.Session.update(sessionId, {
+      await appClient.entities.Session.update(sessionId, {
         transcript_text: transcript,
         audio_file_url: file_url,
         ...(durationSeconds > 0 ? { duration: durationSeconds } : {}),
@@ -53,7 +53,7 @@ export default function AudioUploader({ sessionId, onTranscriptReady, onAudioUpl
 
       // 5. Deduct minutes from subscription (only if duration known)
       if (durationSeconds > 0) {
-        await base44.functions.invoke("deductMinutes", {
+        await appClient.functions.invoke("deductMinutes", {
           minutes: Math.ceil(durationSeconds / 60)
         });
       }

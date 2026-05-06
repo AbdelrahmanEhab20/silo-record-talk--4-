@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Mic, Zap, BarChart2, ArrowRight, CheckCircle, Brain, FileText, Share2, Ear, Check, Crown, Building2, Star, ChevronRight, BookOpen, Clock, Upload, Video, ImageIcon, FileCode } from "lucide-react";
 import { PLAN_CONFIG } from "@/utils/planConfig";
 import { motion } from "framer-motion";
@@ -10,7 +10,7 @@ export default function Landing() {
   const { isDark } = useTheme();
 
   const handleGetStarted = async () => {
-    base44.auth.redirectToLogin("/home");
+    appClient.auth.redirectToLogin("/home");
   };
 
   const bg = isDark ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F7]';

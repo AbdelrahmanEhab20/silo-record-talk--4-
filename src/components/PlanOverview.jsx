@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WatchAdModal from '@/components/WatchAdModal';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { useTheme } from '@/lib/ThemeContext';
 import { motion } from 'framer-motion';
 import { Zap, Crown, ChevronRight, Clock, Play } from 'lucide-react';
@@ -17,9 +17,9 @@ export default function PlanOverview() {
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const user = await base44.auth.me();
+        const user = await appClient.auth.me();
         if (user) {
-          const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+          const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
           if (subs.length > 0) setSubscription(subs[0]);
         }
       } catch (e) {
@@ -34,9 +34,9 @@ export default function PlanOverview() {
   const handleAdRewarded = async () => {
     // Re-fetch subscription to reflect new bonus
     try {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       if (user) {
-        const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+        const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
         if (subs.length > 0) setSubscription(subs[0]);
       }
     } catch (e) {}

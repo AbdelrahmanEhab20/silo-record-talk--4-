@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { Loader2, Zap, Download, Save } from "lucide-react";
 
@@ -31,7 +31,7 @@ export default function ProgrammaticSEO() {
     setLoading(true);
     setGenerated([]);
 
-    const pages = await base44.integrations.Core.InvokeLLM({
+    const pages = await appClient.integrations.Core.InvokeLLM({
       prompt: `You are an SEO expert. Generate programmatic SEO page metadata for SILO (AI voice recording + meeting notes SaaS) for these keyword variations:
 
 Template: "${selectedTemplate.template}"
@@ -76,7 +76,7 @@ Return JSON array of page objects.`,
   const saveAll = async () => {
     setSaving(true);
     for (const page of generated) {
-      await base44.entities.SEOPage.create({
+      await appClient.entities.SEOPage.create({
         ...page,
         page_type: "programmatic",
         template_variable: selectedTemplate.id,

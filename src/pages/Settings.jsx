@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { ArrowLeft, Check, Sun, Moon, Smartphone, LogOut, Archive, ChevronDown, ChevronUp } from "lucide-react";
 
 import { useAuth } from "@/lib/AuthContext";
@@ -29,7 +29,7 @@ export default function Settings() {
     const confirmed = window.confirm("Log out from your account?");
     if (!confirmed) return;
     try {
-      await base44.auth.logout("/");
+      await appClient.auth.logout("/");
     } catch (error) {
       console.error("Logout error:", error);
       // Force redirect to landing page even if logout fails
@@ -47,10 +47,10 @@ export default function Settings() {
     setDeletingAccount(true);
     try {
       // Delete all user sessions
-      const sessions = await base44.entities.Session.list("-created_date", 200);
-      await Promise.all(sessions.map((s) => base44.entities.Session.delete(s.id)));
+      const sessions = await appClient.entities.Session.list("-created_date", 200);
+      await Promise.all(sessions.map((s) => appClient.entities.Session.delete(s.id)));
       // Log out
-      base44.auth.logout();
+      appClient.auth.logout();
     } catch (e) {
       setDeletingAccount(false);
       alert("Something went wrong. Please try again.");

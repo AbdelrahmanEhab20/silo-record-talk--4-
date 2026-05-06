@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { motion } from "framer-motion";
 import { PlaybackProvider } from "@/lib/PlaybackContext";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -92,9 +92,9 @@ export default function SessionDetail() {
   const { isDark } = useTheme();
 
   useEffect(() => {
-    base44.auth.me().then(async (userData) => {
+    appClient.auth.me().then(async (userData) => {
       setUser(userData);
-      const subs = await base44.entities.PlanSubscription.filter({ user_email: userData.email });
+      const subs = await appClient.entities.PlanSubscription.filter({ user_email: userData.email });
       if (subs.length > 0) setSubscription(subs[0]);
     }).catch(() => {});
   }, []);
@@ -102,7 +102,7 @@ export default function SessionDetail() {
   // Check if this session has sub-sessions (moved up for polling access)
   const { data: subsessions } = useQuery({
     queryKey: ["subsessions", sessionId],
-    queryFn: () => base44.entities.Session.filter({ parent_session_id: sessionId, is_subsession: true }),
+    queryFn: () => appClient.entities.Session.filter({ parent_session_id: sessionId, is_subsession: true }),
     enabled: !!sessionId && !!user,
     staleTime: 30000,
   });
@@ -117,7 +117,7 @@ export default function SessionDetail() {
     queryKey: ["session", sessionId, user?.email],
     queryFn: async () => {
       if (!user || !sessionId) return null;
-      const sess = await base44.entities.Session.get(sessionId);
+      const sess = await appClient.entities.Session.get(sessionId);
       if (sess.user_email !== user.email) return null;
       return sess;
     },
@@ -225,7 +225,7 @@ export default function SessionDetail() {
   const handleExportDocx = async () => {
     setExportingDocx(true);
     try {
-      const res = await base44.functions.invoke("generateMeetingDocx", { sessionId });
+      const res = await appClient.functions.invoke("generateMeetingDocx", { sessionId });
       const { base64, filename } = res.data;
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
@@ -248,7 +248,7 @@ export default function SessionDetail() {
 
   const titleMutation = useMutation({
     mutationFn: async (newTitle) => {
-      return await base44.entities.Session.update(sessionId, { title: newTitle.trim() });
+      return await appClient.entities.Session.update(sessionId, { title: newTitle.trim() });
     },
     onSuccess: () => {
       setEditingTitle(false);
@@ -288,12 +288,12 @@ export default function SessionDetail() {
       const targetLang = langLabels[langCode] || langCode;
       const [summaryRes, transcriptRes] = await Promise.all([
         rawSummary
-          ? base44.integrations.Core.InvokeLLM({
+          ? appClient.integrations.Core.InvokeLLM({
               prompt: `Translate the following text to ${targetLang}. Preserve all formatting, bullet points, JSON structure, timestamps, and speaker labels exactly. Only translate the human-readable text content.\n\n${rawSummary}`
             })
           : Promise.resolve(null),
         rawTranscript
-          ? base44.integrations.Core.InvokeLLM({
+          ? appClient.integrations.Core.InvokeLLM({
               prompt: `Translate the following meeting transcript to ${targetLang}. Preserve all timestamps like [00:00], speaker labels, and formatting exactly. Only translate the spoken text.\n\n${rawTranscript}`
             })
           : Promise.resolve(null),
@@ -307,13 +307,13 @@ export default function SessionDetail() {
   };
 
   const handleTranscriptSave = async (newText) => {
-    await base44.entities.Session.update(sessionId, { transcript_text: newText });
+    await appClient.entities.Session.update(sessionId, { transcript_text: newText });
   };
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this session? This cannot be undone.")) return;
     setDeleting(true);
-    await base44.entities.Session.delete(sessionId);
+    await appClient.entities.Session.delete(sessionId);
     navigate("/home");
   };
 
@@ -322,10 +322,10 @@ export default function SessionDetail() {
     setIsRetranscribing(true);
     try {
       if (session.video_url) {
-        await base44.functions.invoke("processVideoUrl", { video_url: session.video_url });
+        await appClient.functions.invoke("processVideoUrl", { video_url: session.video_url });
       } else if (session.audio_file_url) {
         const langCode = session.transcript_language || "en";
-        await base44.functions.invoke("transcribeAudio", {
+        await appClient.functions.invoke("transcribeAudio", {
           audio_url: session.audio_file_url,
           language: langCode,
           session_id: sessionId,
@@ -336,7 +336,7 @@ export default function SessionDetail() {
         return;
       }
 
-      await base44.functions.invoke("processSessionBackground", { session_id: sessionId, force_transcribe: true });
+      await appClient.functions.invoke("processSessionBackground", { session_id: sessionId, force_transcribe: true });
       queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
       setTranscriptText(null);
     } catch (e) {
@@ -723,11 +723,11 @@ export default function SessionDetail() {
                 title={session.title}
                 onDeckComplete={async ({ known }) => {
                   try {
-                    const u = await base44.auth.me();
+                    const u = await appClient.auth.me();
                     const { format, addDays } = await import("date-fns");
                     const score = Math.round((known.length / flashcards.length) * 100);
                     const intervalDays = score >= 80 ? 14 : score >= 60 ? 7 : 1;
-                    await base44.entities.StudyRecord.create({
+                    await appClient.entities.StudyRecord.create({
                       user_email: u.email,
                       session_id: session.id,
                       session_title: session.title,
@@ -806,7 +806,7 @@ export default function SessionDetail() {
                 }
 
                 setSummaryText(updated);
-                await base44.entities.Session.update(sessionId, { summary_text: updated });
+                await appClient.entities.Session.update(sessionId, { summary_text: updated });
               }}
             />
           </div>

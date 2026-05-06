@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
@@ -57,7 +57,7 @@ export default function PublicSessionView() {
     queryKey: ["publicShare", shareCode],
     queryFn: async () => {
       if (!shareCode) return null;
-      const results = await base44.entities.PublicSessionShare.filter({ share_code: shareCode });
+      const results = await appClient.entities.PublicSessionShare.filter({ share_code: shareCode });
       return results[0] || null;
     },
     enabled: !!shareCode,
@@ -66,21 +66,21 @@ export default function PublicSessionView() {
   // Fetch session data
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["publicSession", share?.session_id],
-    queryFn: () => base44.entities.Session.get(share.session_id),
+    queryFn: () => appClient.entities.Session.get(share.session_id),
     enabled: !!share,
   });
 
   // Fetch subsessions
   const { data: subsessions = [] } = useQuery({
     queryKey: ["publicSubsessions", session?.id],
-    queryFn: () => base44.entities.Session.filter({ parent_session_id: session.id, is_subsession: true }),
+    queryFn: () => appClient.entities.Session.filter({ parent_session_id: session.id, is_subsession: true }),
     enabled: !!session?.id,
   });
 
   // Increment access count once
   useEffect(() => {
     if (share?.id) {
-      base44.entities.PublicSessionShare.update(share.id, {
+      appClient.entities.PublicSessionShare.update(share.id, {
         access_count: (share.access_count || 0) + 1,
       });
     }

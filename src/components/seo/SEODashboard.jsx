@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { FileText, Target, TrendingUp, Globe, Loader2, ExternalLink, Trash2 } from "lucide-react";
 
@@ -15,8 +15,8 @@ export default function SEODashboard() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.SEOPage.list("-created_date", 50),
-      base44.entities.Keyword.list("-priority_score", 50),
+      appClient.entities.SEOPage.list("-created_date", 50),
+      appClient.entities.Keyword.list("-priority_score", 50),
     ]).then(([p, k]) => {
       setPages(p);
       setKeywords(k);
@@ -26,7 +26,7 @@ export default function SEODashboard() {
 
   const deletePage = async (id) => {
     setDeleting(id);
-    await base44.entities.SEOPage.delete(id);
+    await appClient.entities.SEOPage.delete(id);
     setPages(prev => prev.filter(p => p.id !== id));
     setDeleting(null);
   };

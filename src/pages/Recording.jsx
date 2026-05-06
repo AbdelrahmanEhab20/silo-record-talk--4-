@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Button } from "@/components/ui/button";
 import { Square, X, Play, Pause, Loader2, ArrowLeft, ChevronDown, Plus, Star } from "lucide-react";
 import ProcessingBanner from "@/components/session/ProcessingBanner";
@@ -52,7 +52,7 @@ const buildTranscriptPreview = (text, limit = MAX_DB_TRANSCRIPT_CHARS) => {
 const uploadTranscriptFile = async (transcriptText) => {
   if (!transcriptText || transcriptText.length < 5000) return null;
   try {
-    const result = await base44.functions.invoke('uploadTranscriptFile', { transcript_text: transcriptText });
+    const result = await appClient.functions.invoke('uploadTranscriptFile', { transcript_text: transcriptText });
     return result.data?.file_url || null;
   } catch (e) {
     console.warn('Failed to upload transcript file:', e);
@@ -246,12 +246,12 @@ export default function Recording() {
     autoSaveInProgressRef.current = true;
     try {
       const rawTranscript = currentSegments.map((seg) => `[${seg.timestamp}] ${seg.text}`).join("\n");
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
 
       if (!autoSaveSessionIdRef.current) {
         const now = new Date();
         const title = `Session — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-        const session = await base44.entities.Session.create({
+        const session = await appClient.entities.Session.create({
           user_email: user.email,
           title,
           duration: currentDuration,
@@ -263,7 +263,7 @@ export default function Recording() {
         });
         autoSaveSessionIdRef.current = session.id;
       } else {
-        await base44.entities.Session.update(autoSaveSessionIdRef.current, {
+        await appClient.entities.Session.update(autoSaveSessionIdRef.current, {
           duration: currentDuration,
           transcript_text: rawTranscript,
           manual_notes: serializeNotes(quickNotesRef.current),
@@ -368,19 +368,19 @@ export default function Recording() {
     const title = `Session — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
     const rawTranscript = snapshotSegments.map((seg) => `[${seg.timestamp}] ${seg.text}`).join("\n");
 
-    const user = await base44.auth.me();
+    const user = await appClient.auth.me();
     
     // REMOVED: Premature deduction call (Patch 2)
     // const durationMins = Math.ceil(snapshotDuration / 60);
     // if (durationMins > 0) {
-    //   base44.functions.invoke('deductMinutes', { minutes: durationMins }).catch(() => {});
+    //   appClient.functions.invoke('deductMinutes', { minutes: durationMins }).catch(() => {});
     // }
 
-    base44.analytics.track({ eventName: "recording_ended", properties: { duration_seconds: snapshotDuration, has_transcript: !!rawTranscript } });
+    appClient.analytics.track({ eventName: "recording_ended", properties: { duration_seconds: snapshotDuration, has_transcript: !!rawTranscript } });
 
-    const { file_url: audioUrl } = await base44.integrations.Core.UploadFile({ file: audioFile });
+    const { file_url: audioUrl } = await appClient.integrations.Core.UploadFile({ file: audioFile });
 
-    const session = await base44.entities.Session.create({
+    const session = await appClient.entities.Session.create({
       user_email: user.email,
       title,
       duration: snapshotDuration,
@@ -396,7 +396,7 @@ export default function Recording() {
 
     if (!processingTriggeredRef.current.has(session.id)) {
       processingTriggeredRef.current.add(session.id);
-      base44.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
+      appClient.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
     }
 
     return session;
@@ -410,7 +410,7 @@ export default function Recording() {
     autoSaveTimerRef.current = null;
     const capturedAutoSaveId = autoSaveSessionIdRef.current;
     try {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const now = new Date();
       const title = `Session — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 
@@ -425,11 +425,11 @@ export default function Recording() {
         const audioBlob = new Blob(needsHeaderLast ? [firstChunkLast, ...lastAudioChunks] : lastAudioChunks, { type: mimeType });
         const audioFile = new File([audioBlob], `session.${ext}`, { type: mimeType });
         const rawLastTranscript = lastSegments.map(s => `[${s.timestamp}] ${s.text}`).join("\n");
-        const { file_url: lastAudioUrl } = await base44.integrations.Core.UploadFile({ file: audioFile });
+        const { file_url: lastAudioUrl } = await appClient.integrations.Core.UploadFile({ file: audioFile });
 
         const lastTranscriptFileUrl = await uploadTranscriptFile(rawLastTranscript);
 
-        const lastSub = await base44.entities.Session.create({
+        const lastSub = await appClient.entities.Session.create({
           user_email: user.email,
           title: `${title} (Part ${allSubsessions.length + 1})`,
           duration: lastDuration,
@@ -448,11 +448,11 @@ export default function Recording() {
         setUploadStage('processing_last');
         let processedLastTranscript = rawLastTranscript;
         try {
-          await base44.functions.invoke('processSessionBackground', { session_id: lastSub.id, force_transcribe: true });
+          await appClient.functions.invoke('processSessionBackground', { session_id: lastSub.id, force_transcribe: true });
           const deadline = Date.now() + 60000;
           while (Date.now() < deadline) {
             await new Promise(r => setTimeout(r, 3000));
-            const updated = await base44.entities.Session.get(lastSub.id);
+            const updated = await appClient.entities.Session.get(lastSub.id);
             if (updated.processing_status === 'done' || updated.processing_status === 'failed') {
               if (updated.transcript_file_url) {
                 try {
@@ -482,7 +482,7 @@ export default function Recording() {
           uniqueSubsessions.map(async (s) => {
             if (s.sessionId) {
               try {
-                const dbSub = await base44.entities.Session.get(s.sessionId);
+                const dbSub = await appClient.entities.Session.get(s.sessionId);
                 if (dbSub.transcript_file_url) {
                   try {
                     const fileRes = await fetch(dbSub.transcript_file_url);
@@ -509,7 +509,7 @@ export default function Recording() {
         const totalDuration = uniqueSubsessions.reduce((sum, s) => sum + (s.duration || 0), 0) + lastDuration;
         const mergedTranscriptFileUrl = await uploadTranscriptFile(allTranscripts);
 
-        await base44.entities.Session.update(mainSessionIdRef.current, {
+        await appClient.entities.Session.update(mainSessionIdRef.current, {
           transcript_text: allTranscripts.slice(0, 10000),
           transcript_file_url: mergedTranscriptFileUrl || undefined,
           duration: totalDuration,
@@ -518,13 +518,13 @@ export default function Recording() {
           ...sessionContext,
         });
 
-        base44.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
+        appClient.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${mainSessionIdRef.current}`);
       } else {
         // REMOVED: Premature deduction call (Patch 2)
         // const durationMins = Math.ceil(lastDuration / 60);
-        // if (durationMins > 0) base44.functions.invoke('deductMinutes', { minutes: durationMins }).catch(() => {});
+        // if (durationMins > 0) appClient.functions.invoke('deductMinutes', { minutes: durationMins }).catch(() => {});
 
         const mimeType = mimeTypeRef.current;
         const ext = mimeType.includes("mp4") ? "mp4" : "webm";
@@ -534,14 +534,14 @@ export default function Recording() {
         const audioBlob = new Blob(needsHeaderSingle ? [firstChunkSingle, ...lastAudioChunks] : lastAudioChunks, { type: mimeType });
         const audioFile = new File([audioBlob], `session.${ext}`, { type: mimeType });
         const rawTranscript = lastSegments.map(s => `[${s.timestamp}] ${s.text}`).join("\n");
-        const { file_url: audioUrl } = await base44.integrations.Core.UploadFile({ file: audioFile });
+        const { file_url: audioUrl } = await appClient.integrations.Core.UploadFile({ file: audioFile });
 
         const transcriptFileUrl = await uploadTranscriptFile(rawTranscript);
 
         let sessionId = capturedAutoSaveId;
         if (sessionId) {
           autoSaveSessionIdRef.current = null;
-          await base44.entities.Session.update(sessionId, {
+          await appClient.entities.Session.update(sessionId, {
             title,
             duration: lastDuration,
             audio_file_url: audioUrl,
@@ -554,7 +554,7 @@ export default function Recording() {
             ...sessionContext,
           });
         } else {
-          const session = await base44.entities.Session.create({
+          const session = await appClient.entities.Session.create({
             user_email: user.email,
             title,
             duration: lastDuration,
@@ -571,7 +571,7 @@ export default function Recording() {
           sessionId = session.id;
         }
 
-        base44.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
+        appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${sessionId}`);
       }
@@ -628,7 +628,7 @@ export default function Recording() {
           if (autoSaveSessionIdRef.current) {
             const orphanId = autoSaveSessionIdRef.current;
             autoSaveSessionIdRef.current = null;
-            base44.entities.Session.delete(orphanId).catch(() => {});
+            appClient.entities.Session.delete(orphanId).catch(() => {});
           }
 
           setIsSubsessionMode(true);
@@ -642,10 +642,10 @@ export default function Recording() {
 
           let parentId = mainSessionIdRef.current;
           if (!parentId) {
-            const user = await base44.auth.me();
+            const user = await appClient.auth.me();
             const now = new Date();
             const placeholderTitle = `Session — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-            const mainSession = await base44.entities.Session.create({
+            const mainSession = await appClient.entities.Session.create({
               user_email: user.email,
               title: placeholderTitle,
               duration: 0,
@@ -702,7 +702,7 @@ export default function Recording() {
             ));
             const poll = setInterval(async () => {
               try {
-                const updated = await base44.entities.Session.get(session.id);
+                const updated = await appClient.entities.Session.get(session.id);
                 if (updated.processing_status === 'done' || updated.processing_status === 'failed') {
                   clearInterval(poll);
                   setSubsessions(prev => prev.map(s =>
@@ -787,7 +787,7 @@ export default function Recording() {
     setWaveformBars(Array(24).fill(0));
     if (!isSubsessionMode) {
       if (autoSaveSessionIdRef.current) {
-        base44.entities.Session.delete(autoSaveSessionIdRef.current).catch(() => {});
+        appClient.entities.Session.delete(autoSaveSessionIdRef.current).catch(() => {});
       }
       autoSaveSessionIdRef.current = null;
       processingTriggeredRef.current = new Set();
@@ -910,7 +910,7 @@ export default function Recording() {
     }
 
     setRecording(true);
-    base44.analytics.track({ eventName: "recording_started", properties: { audio_mode: mode, language: selectedLanguage } });
+    appClient.analytics.track({ eventName: "recording_started", properties: { audio_mode: mode, language: selectedLanguage } });
 
     if ('wakeLock' in navigator) {
       try {
@@ -958,7 +958,7 @@ export default function Recording() {
     setUploadStage({ type: "uploading", progress: 10, label: `Uploading ${file.name}…` });
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       setUploadStage({ type: "transcribing", progress: 35, label: "Starting transcription with Whisper…" });
 
       const langCode = selectedLanguage?.split("-")[0] || "en";
@@ -975,7 +975,7 @@ export default function Recording() {
         );
       }, 1200);
 
-      const res = await base44.functions.invoke("transcribeAudio", { audio_url: file_url, language: langCode });
+      const res = await appClient.functions.invoke("transcribeAudio", { audio_url: file_url, language: langCode });
       clearInterval(tickInterval);
 
       setUploadStage({ type: "analyzing", progress: 95, label: "Saving session…" });
@@ -988,11 +988,11 @@ export default function Recording() {
         year: "numeric",
       })}`;
 
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const transcriptPayload = await buildTranscriptPayloadForSessionCreate(transcript);
 
       // Patch 3A: Audio Upload - Add billing metadata
-      const session = await base44.entities.Session.create({
+      const session = await appClient.entities.Session.create({
         user_email: user.email,
         title,
         audio_file_url: file_url,
@@ -1006,7 +1006,7 @@ export default function Recording() {
         ...sessionContext,
       });
 
-      base44.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
+      appClient.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
       navigate(`/SessionDetail?id=${session.id}`);
     } catch (e) {
       setError(e.message || "Upload failed");
@@ -1040,7 +1040,7 @@ export default function Recording() {
 
     let res;
     try {
-      res = await base44.functions.invoke("processVideoUrl", { video_url: url });
+      res = await appClient.functions.invoke("processVideoUrl", { video_url: url });
     } catch (e) {
       clearInterval(linkTickInterval);
       setError(e.message || "Failed to process video URL");
@@ -1112,11 +1112,11 @@ export default function Recording() {
         year: "numeric",
       })}`;
 
-      const userMe = await base44.auth.me();
+      const userMe = await appClient.auth.me();
       const transcriptPayload = await buildTranscriptPayloadForSessionCreate(transcriptText);
 
       // Patch 3B: Video URL - Add billing metadata
-      const session = await base44.entities.Session.create({
+      const session = await appClient.entities.Session.create({
         user_email: userMe.email,
         title,
         video_url: url,
@@ -1130,7 +1130,7 @@ export default function Recording() {
         ...sessionContext,
       });
 
-      base44.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
+      appClient.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
       navigate(`/SessionDetail?id=${session.id}`);
     } catch (e) {
       const errorMsg = e.message || "Failed to process video URL";
@@ -1159,14 +1159,14 @@ export default function Recording() {
         year: "numeric",
       })}`;
 
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const transcriptPayload = await buildTranscriptPayloadForSessionCreate(text);
 
       // Patch 3C: Paste Text - Calculate estimated minutes from word count
       const wordCount = String(text || "").trim().split(/\s+/).filter(Boolean).length;
       const estimatedMinutes = Math.max(1, Math.ceil(wordCount / 150));
 
-      const session = await base44.entities.Session.create({
+      const session = await appClient.entities.Session.create({
         user_email: user.email,
         title,
         ...transcriptPayload,
@@ -1179,7 +1179,7 @@ export default function Recording() {
         ...sessionContext,
       });
 
-      base44.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
+      appClient.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
       navigate(`/SessionDetail?id=${session.id}`);
     } catch (e) {
       setError(e.message || "Failed to process text");
@@ -1193,10 +1193,10 @@ export default function Recording() {
     setUploadStage({ type: "uploading", progress: 15, label: "Uploading image…" });
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       setUploadStage({ type: "transcribing", progress: 50, label: "Extracting text with AI vision…" });
 
-      const res = await base44.integrations.Core.InvokeLLM({
+      const res = await appClient.integrations.Core.InvokeLLM({
         prompt:
           "This image contains handwritten or printed meeting minutes/notes. Extract ALL text from the image exactly as written, preserving the structure and content. Return only the extracted text, nothing else.",
         file_urls: [file_url],
@@ -1216,10 +1216,10 @@ export default function Recording() {
         year: "numeric",
       })}`;
 
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       const transcriptPayload = await buildTranscriptPayloadForSessionCreate(extractedText);
 
-      const session = await base44.entities.Session.create({
+      const session = await appClient.entities.Session.create({
         user_email: user.email,
         title,
         ...transcriptPayload,
@@ -1233,7 +1233,7 @@ export default function Recording() {
         ...sessionContext,
       });
 
-      base44.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
+      appClient.functions.invoke("processSessionBackground", { session_id: session.id }).catch(() => {});
       navigate(`/SessionDetail?id=${session.id}`);
     } catch (e) {
       setError(e.message || "Failed to extract text from image");
@@ -1434,7 +1434,7 @@ export default function Recording() {
               ));
               const poll = setInterval(async () => {
                 try {
-                  const updated = await base44.entities.Session.get(sub.sessionId);
+                  const updated = await appClient.entities.Session.get(sub.sessionId);
                   if (updated.processing_status === 'done' || updated.processing_status === 'failed') {
                     clearInterval(poll);
                     setSubsessions(prev => prev.map(s =>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "@/lib/ThemeContext";
 import { Folder, X, Check } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 const FOLDER_COLORS = [
@@ -34,8 +34,8 @@ export default function FolderBadge({ session, allFolders: propFolders }) {
     setOpen(true);
     // Always fetch fresh folder list from DB
     try {
-      const me = await base44.auth.me();
-      const sessions = await base44.entities.Session.filter({ user_email: me.email }, "-created_date", 200);
+      const me = await appClient.auth.me();
+      const sessions = await appClient.entities.Session.filter({ user_email: me.email }, "-created_date", 200);
       const folders = [...new Set(sessions.filter(s => s.folder).map(s => s.folder))].sort();
       setFetchedFolders(folders);
     } catch {}
@@ -49,7 +49,7 @@ export default function FolderBadge({ session, allFolders: propFolders }) {
 
   const save = async (folder) => {
     setSaving(true);
-    await base44.entities.Session.update(session.id, { folder: folder || null });
+    await appClient.entities.Session.update(session.id, { folder: folder || null });
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
     setSaving(false);
     setOpen(false);

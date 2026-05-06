@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function PainPointsAnalysis({ sessions }) {
@@ -27,7 +27,7 @@ Summary: ${s.summary_text?.substring(0, 400) || "No summary"}
 Tags: ${(s.tags || []).join(", ")}
 `).join("\n");
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `Analyze these 20 recent meetings to identify recurring team pain points and challenges:
 
 ${sessionSummaries}

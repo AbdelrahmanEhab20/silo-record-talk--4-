@@ -20,7 +20,7 @@ function createEntityClient(entity) {
   };
 }
 
-export const base44 = {
+export const appClient = {
   auth: {
     async isAuthenticated() {
       const state = await apiRequest("/auth/session");

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import SentimentOutcomeAnalysis from "@/components/analytics/SentimentOutcomeAnalysis";
 import ParticipationTrends from "@/components/analytics/ParticipationTrends";
 import PainPointsAnalysis from "@/components/analytics/PainPointsAnalysis";
@@ -20,7 +20,7 @@ export default function Analytics() {
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions-all"],
-    queryFn: () => base44.entities.Session.list("-created_date", 200),
+    queryFn: () => appClient.entities.Session.list("-created_date", 200),
   });
 
   // ── Weekly session volume (last 8 weeks) ──────────────────────────────────
@@ -62,9 +62,9 @@ export default function Analytics() {
   const { data: subscription } = useQuery({
     queryKey: ["subscription"],
     queryFn: async () => {
-      const user = await base44.auth.me();
+      const user = await appClient.auth.me();
       if (!user) return null;
-      const subs = await base44.entities.PlanSubscription.filter({ user_email: user.email });
+      const subs = await appClient.entities.PlanSubscription.filter({ user_email: user.email });
       return subs.length > 0 ? subs[0] : null;
     },
   });

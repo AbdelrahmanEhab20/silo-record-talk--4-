@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useMutation } from "@tanstack/react-query";
 import { CheckSquare, Square, Calendar, User, Flag, ListChecks, Plus, X, Building2, Users, Pencil, Check, ScanSearch, Loader2, CalendarPlus } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
@@ -145,7 +145,7 @@ export default function ActionItems({ sessionId, summaryText, transcript, onSumm
 
     const newText = JSON.stringify(parsed);
     localUpdateRef.current = true;
-    await base44.entities.Session.update(sessionId, { summary_text: newText });
+    await appClient.entities.Session.update(sessionId, { summary_text: newText });
     if (onSummaryUpdated) onSummaryUpdated(newText);
   };
 
@@ -186,7 +186,7 @@ export default function ActionItems({ sessionId, summaryText, transcript, onSumm
     setScanning(true);
     try {
       const existingTasks = items.map((i) => i.task).join("; ");
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are scanning a meeting transcript to find ALL action items and tasks that were mentioned, even implicitly.
 
 EXISTING ACTION ITEMS (already found — do NOT repeat these):

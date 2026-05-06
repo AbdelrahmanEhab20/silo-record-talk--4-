@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 import { appParams } from '@/lib/app-params';
 
 const AuthContext = createContext();
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       
       // Check if user has a valid session token stored
-      const isAuthed = await base44.auth.isAuthenticated();
+      const isAuthed = await appClient.auth.isAuthenticated();
       
       if (isAuthed) {
         // User has valid token, fetch their data
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      const currentUser = await appClient.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -108,16 +108,16 @@ export const AuthProvider = ({ children }) => {
     
     if (shouldRedirect) {
       // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
+      appClient.auth.logout(window.location.href);
     } else {
       // Just remove the token without redirect
-      base44.auth.logout();
+      appClient.auth.logout();
     }
   };
 
   const navigateToLogin = () => {
     // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    appClient.auth.redirectToLogin(window.location.href);
   };
 
   return (

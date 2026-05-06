@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 export default function PreviewStep({ selections, sessionId, onSelection }) {
   const { isDark } = useTheme();
@@ -17,7 +17,7 @@ export default function PreviewStep({ selections, sessionId, onSelection }) {
         return;
       }
       try {
-        const sessions = await base44.entities.Session.list("-created_date", 100);
+        const sessions = await appClient.entities.Session.list("-created_date", 100);
         const session = sessions.find(s => s.id === sessionId);
         if (session) {
           setSessionData(session);

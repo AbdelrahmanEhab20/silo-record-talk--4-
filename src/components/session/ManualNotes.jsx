@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { MessageSquare, Plus, X, Wand2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 // Safely extract text from a note regardless of format
 const getNoteText = (note) => {
@@ -44,7 +44,7 @@ export default function ManualNotes({ notes, sessionId, onNotesUpdated }) {
   const persistNotes = async (updated) => {
     setDisplayNotes(updated);
     if (sessionId) {
-      await base44.entities.Session.update(sessionId, { manual_notes: updated });
+      await appClient.entities.Session.update(sessionId, { manual_notes: updated });
     }
     onNotesUpdated?.(updated);
   };
@@ -68,7 +68,7 @@ export default function ManualNotes({ notes, sessionId, onNotesUpdated }) {
     if (displayNotes.length === 0) return;
     setRefining(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await appClient.integrations.Core.InvokeLLM({
         prompt: `You are a meeting notes editor. Fix ONLY spelling and grammar typos in the following notes. 
 Preserve timestamps like [00:01] exactly. Preserve the meaning and wording — only fix obvious errors.
 Return ONLY a JSON array of corrected note strings, in the same order, with no extra text.

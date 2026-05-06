@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/ThemeContext';
 
 const DOWNLOAD_URL = 'https://flickit.me/downloadflickit';
-const FLICKIT_LOGO = 'https://media.base44.com/images/public/6996947e358dd648b0520980/62db091df_White.png';
+const FLICKIT_LOGO = 'https://media.appClient.com/images/public/6996947e358dd648b0520980/62db091df_White.png';
 
 // Animated floating card icon
 function FloatingCard({ delay = 0, children, style }) {

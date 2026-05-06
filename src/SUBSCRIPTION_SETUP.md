@@ -1,7 +1,7 @@
 # Credit-Based Subscription System Setup
 
 ## Overview
-Complete subscription system with 4 tiers (Free, Starter, Pro, Pro Plus) using Stripe for payments and Base44 database for credit tracking.
+Complete subscription system with 4 tiers (Free, Starter, Pro, Pro Plus) using Stripe for payments and MongoDB for credit tracking.
 
 ## Entities Created
 - **PlanSubscription**: Tracks user credits, plan, and subscription status

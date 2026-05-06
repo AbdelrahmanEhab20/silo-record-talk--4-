@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, HelpCircle, Calendar, TrendingUp, Award, ChevronRight, Loader2, GraduationCap, FolderOpen } from "lucide-react";
@@ -23,11 +23,11 @@ export default function LearningProgress() {
   const textSub = isDark ? "text-white/40" : "text-gray-400";
 
   useEffect(() => {
-    base44.auth.me().then(async (u) => {
+    appClient.auth.me().then(async (u) => {
       setUser(u);
       const [recs, sess] = await Promise.all([
-        base44.entities.StudyRecord.filter({ user_email: u.email }),
-        base44.entities.Session.filter({ user_email: u.email }),
+        appClient.entities.StudyRecord.filter({ user_email: u.email }),
+        appClient.entities.Session.filter({ user_email: u.email }),
       ]);
       setRecords(recs);
       setSessions(sess.filter(s => EDUCATIONAL_TYPES.includes(s.session_type)));

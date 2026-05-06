@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Mic, RefreshCw, Loader2 } from "lucide-react";
@@ -27,7 +27,7 @@ export default function Calendar() {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["sessions"],
-    queryFn: () => base44.entities.Session.list("-created_date", 200),
+    queryFn: () => appClient.entities.Session.list("-created_date", 200),
   });
 
   const sessionsByDate = useMemo(() => {
@@ -44,7 +44,7 @@ export default function Calendar() {
   const fetchGcEvents = useCallback(async () => {
     setGcLoading(true);
     try {
-      const res = await base44.functions.invoke('googleCalendarUser', { action: 'list' });
+      const res = await appClient.functions.invoke('googleCalendarUser', { action: 'list' });
       setGcEvents(res.data?.events || []);
       setConnected(true);
     } catch {
@@ -56,9 +56,9 @@ export default function Calendar() {
 
   // ── Auth check + initial fetch ─────────────────────────────────
   useEffect(() => {
-    base44.auth.isAuthenticated().then(async (authed) => {
+    appClient.auth.isAuthenticated().then(async (authed) => {
       if (authed) {
-        const me = await base44.auth.me();
+        const me = await appClient.auth.me();
         setUser(me);
         await fetchGcEvents();
       }
@@ -68,7 +68,7 @@ export default function Calendar() {
 
   // ── Connect handler (Rule 3 — popup poll) ─────────────────────
   const handleConnect = async () => {
-    const url = await base44.connectors.connectAppUser(CONNECTOR_ID);
+    const url = await appClient.connectors.connectAppUser(CONNECTOR_ID);
     const popup = window.open(url, "_blank");
     const timer = setInterval(() => {
       if (!popup || popup.closed) {
@@ -79,7 +79,7 @@ export default function Calendar() {
   };
 
   const handleDisconnect = async () => {
-    await base44.connectors.disconnectAppUser(CONNECTOR_ID);
+    await appClient.connectors.disconnectAppUser(CONNECTOR_ID);
     setConnected(false);
     setGcEvents([]);
   };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/lib/ThemeContext';
 import { ChevronLeft, Video, ExternalLink, CheckCircle, Copy, Check } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { appClient } from '@/api/appClient';
 
 const FUNCTION_BASE = `${window.location.origin}/api/functions`;
 

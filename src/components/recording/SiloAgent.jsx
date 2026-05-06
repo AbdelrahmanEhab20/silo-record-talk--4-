@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bot, Zap, Users, CheckSquare, Lightbulb, Loader2, Copy, Check, MessageSquarePlus } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 
 const SPEAKER_COLORS = ['#A855F7', '#38BDF8', '#4ADE80', '#FB923C', '#F472B6'];
 
@@ -99,7 +99,7 @@ export default function SiloAgent({ segments = [], notes = [], subsessions = [],
 
         const fullContext = allTranscript + manualNotesStr;
 
-        const response = await base44.integrations.Core.InvokeLLM({
+        const response = await appClient.integrations.Core.InvokeLLM({
           prompt: `You are Silo, an intelligent meeting assistant. Your ONLY job is to extract information STRICTLY from the transcript below — do NOT invent, assume, or add anything not explicitly mentioned in the transcript.
 
 Extract ONLY what is directly stated in the transcript:
@@ -174,7 +174,7 @@ Transcript:\n${fullContext.slice(0, 3000)}`,
         // Don't suggest interventions without real transcript content
         if (context.trim().length < 150) return;
 
-        const response = await base44.integrations.Core.InvokeLLM({
+        const response = await appClient.integrations.Core.InvokeLLM({
           prompt: `You are Silo, a smart meeting assistant. Based ONLY on what was said in this exact transcript, suggest ONE specific, actionable contribution the user could make right now — a question to ask, a point to clarify, or a topic to raise. Be brief (max 2 sentences). Base your suggestion STRICTLY on what was discussed — do not invent topics. If the transcript is too short or unclear, set needed=false.
 
 Transcript:\n${context.slice(0, 2000)}`,

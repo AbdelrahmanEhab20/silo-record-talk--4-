@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
-import { base44 } from "@/api/base44Client";
+import { appClient } from "@/api/appClient";
 import { X, CalendarPlus, Loader2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -39,7 +39,7 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
       reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 30 }] },
     };
 
-    const res = await base44.functions.invoke('googleCalendarUser', { action: 'create', event });
+    const res = await appClient.functions.invoke('googleCalendarUser', { action: 'create', event });
     if (res.data?.error === 'not_connected') throw new Error('Google Calendar not connected');
     setLoading(false);
     setDone(true);
