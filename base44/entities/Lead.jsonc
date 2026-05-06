@@ -1,0 +1,57 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "company": {
+      "type": "string",
+      "description": "Company or organization name"
+    },
+    "role": {
+      "type": "string",
+      "description": "Job title or role"
+    },
+    "team_size": {
+      "type": "string",
+      "enum": [
+        "1-10",
+        "11-50",
+        "51-200",
+        "201-500",
+        "500+"
+      ],
+      "description": "Team size"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message or requirements"
+    },
+    "source": {
+      "type": "string",
+      "description": "Where they came from (e.g. pricing page)",
+      "default": "contact_us"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "qualified",
+        "closed"
+      ],
+      "default": "new"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "message"
+  ]
+}

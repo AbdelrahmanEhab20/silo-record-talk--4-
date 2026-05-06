@@ -1,0 +1,22 @@
+{
+  "name": "Workspace",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Workspace name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the workspace owner"
+    }
+  },
+  "required": [
+    "name",
+    "owner_email"
+  ]
+}

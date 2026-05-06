@@ -1,0 +1,127 @@
+{
+  "name": "AISettings",
+  "type": "object",
+  "properties": {
+    "setting_key": {
+      "type": "string",
+      "description": "Unique key for this setting record (e.g. 'global')"
+    },
+    "llm_providers": {
+      "type": "array",
+      "description": "Configured LLM provider integrations",
+      "items": {
+        "type": "object"
+      }
+    },
+    "live_transcription": {
+      "type": "object",
+      "description": "Settings for live transcription"
+    },
+    "chunk_processing": {
+      "type": "object",
+      "description": "Settings for audio chunk Whisper processing"
+    },
+    "ai_analysis": {
+      "type": "object",
+      "description": "Settings for session AI analysis"
+    },
+    "full_retranscription": {
+      "type": "object",
+      "description": "Settings for full session re-transcription"
+    },
+    "video_url_processing": {
+      "type": "object",
+      "description": "Settings for video URL transcript extraction"
+    },
+    "audio_upload_processing": {
+      "type": "object",
+      "description": "Settings for uploaded audio transcription"
+    },
+    "image_processing": {
+      "type": "object",
+      "description": "Settings for uploaded image text extraction"
+    },
+    "text_processing": {
+      "type": "object",
+      "description": "Settings for pasted text analysis"
+    },
+    "free_plan_limits": {
+      "type": "object",
+      "description": "Limits and feature flags for free plan users",
+      "properties": {
+        "daily_minutes": {
+          "type": "number",
+          "description": "Max recording minutes per day"
+        },
+        "max_sessions_per_day": {
+          "type": "number",
+          "description": "Max sessions per day"
+        },
+        "max_file_upload_mb": {
+          "type": "number",
+          "description": "Max file upload size in MB"
+        },
+        "ai_analysis_enabled": {
+          "type": "boolean"
+        },
+        "export_enabled": {
+          "type": "boolean"
+        },
+        "workspace_enabled": {
+          "type": "boolean"
+        },
+        "calendar_enabled": {
+          "type": "boolean"
+        },
+        "speaker_id_enabled": {
+          "type": "boolean"
+        },
+        "flashcards_enabled": {
+          "type": "boolean"
+        },
+        "max_folders": {
+          "type": "number"
+        }
+      }
+    },
+    "pro_plan_limits": {
+      "type": "object",
+      "description": "Limits and feature flags for pro plan users",
+      "properties": {
+        "monthly_minutes": {
+          "type": "number",
+          "description": "Max recording minutes per month"
+        },
+        "max_file_upload_mb": {
+          "type": "number",
+          "description": "Max file upload size in MB"
+        },
+        "ai_analysis_enabled": {
+          "type": "boolean"
+        },
+        "export_enabled": {
+          "type": "boolean"
+        },
+        "workspace_enabled": {
+          "type": "boolean"
+        },
+        "calendar_enabled": {
+          "type": "boolean"
+        },
+        "speaker_id_enabled": {
+          "type": "boolean"
+        },
+        "flashcards_enabled": {
+          "type": "boolean"
+        },
+        "max_folders": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": [
+    "setting_key"
+  ],
+  "rls": {}
+}

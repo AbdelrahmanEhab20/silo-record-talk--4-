@@ -1,0 +1,36 @@
+{
+  "name": "SharedSession",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "ID of the shared session"
+    },
+    "workspace_id": {
+      "type": "string",
+      "description": "ID of the workspace it's shared with"
+    },
+    "shared_by_email": {
+      "type": "string",
+      "description": "Email of who shared it"
+    },
+    "permission": {
+      "type": "string",
+      "enum": [
+        "view",
+        "edit"
+      ],
+      "description": "Permission level"
+    },
+    "session_title": {
+      "type": "string",
+      "description": "Cached session title for display"
+    }
+  },
+  "required": [
+    "session_id",
+    "workspace_id",
+    "shared_by_email",
+    "permission"
+  ]
+}

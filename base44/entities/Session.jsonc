@@ -1,0 +1,238 @@
+{
+  "name": "Session",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who owns this session"
+    },
+    "title": {
+      "type": "string",
+      "description": "Auto-generated session title from date/time"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Duration in seconds"
+    },
+    "audio_file_url": {
+      "type": "string",
+      "description": "URL of the recorded audio file"
+    },
+    "transcript_text": {
+      "type": "string",
+      "description": "Full transcript text with timestamps"
+    },
+    "transcript_file_url": {
+      "type": "string",
+      "description": "URL of the full transcript text file if too long for direct storage"
+    },
+    "original_transcript_text": {
+      "type": "string",
+      "description": "Original mixed-language transcript before normalization"
+    },
+    "transcript_language": {
+      "type": "string",
+      "description": "Detected primary language of the transcript (e.g. en, ar, fr)"
+    },
+    "is_multilingual": {
+      "type": "boolean",
+      "description": "True if multiple languages were detected and transcript was normalized",
+      "default": false
+    },
+    "summary_text": {
+      "type": "string",
+      "description": "AI-generated summary bullet points"
+    },
+    "original_summary_text": {
+      "type": "string",
+      "description": "Original AI-generated summary before dig deeper modifications"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "AI-extracted keyword tags"
+    },
+    "folder": {
+      "type": "string",
+      "description": "User-assigned folder/group for organizing sessions"
+    },
+    "is_flagged": {
+      "type": "boolean",
+      "description": "Whether the session has been flagged/starred by the user",
+      "default": false
+    },
+    "dialect": {
+      "type": "string",
+      "description": "Detected Arabic dialect key"
+    },
+    "dialect_label": {
+      "type": "string",
+      "description": "Human-readable dialect label with emoji"
+    },
+    "calendar_event_title": {
+      "type": "string",
+      "description": "Linked calendar event name"
+    },
+    "calendar_event_date": {
+      "type": "string",
+      "description": "ISO date/time of the linked calendar event"
+    },
+    "calendar_event_location": {
+      "type": "string",
+      "description": "Location or meeting URL of the calendar event"
+    },
+    "calendar_attendees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of attendee emails or names"
+    },
+    "calendar_provider": {
+      "type": "string",
+      "description": "Calendar provider label: google, outlook, exchange, other"
+    },
+    "word_analysis": {
+      "type": "object",
+      "description": "Cached AI word analysis result"
+    },
+    "sentiment_analysis": {
+      "type": "object",
+      "description": "Cached AI sentiment analysis result"
+    },
+    "session_type": {
+      "type": "string",
+      "enum": [
+        "Meeting",
+        "Lecture",
+        "Workshop",
+        "Class",
+        "Idea",
+        "Brainstorm",
+        "Strategy",
+        "Media interview",
+        "Job interview",
+        "Press Conference"
+      ],
+      "description": "AI-detected session type"
+    },
+    "processing_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "done",
+        "failed"
+      ],
+      "default": "done",
+      "description": "Background processing status for AI analysis"
+    },
+    "assemblyai_job_id": {
+      "type": "string",
+      "description": "AssemblyAI transcript job ID \u2014 set while transcription is in progress, cleared when done"
+    },
+    "parent_session_id": {
+      "type": "string",
+      "description": "ID of the parent/main session if this is a sub-session"
+    },
+    "is_subsession": {
+      "type": "boolean",
+      "description": "True if this session is a sub-session within a larger recording",
+      "default": false
+    },
+    "video_url": {
+      "type": "string",
+      "description": "URL or link to a video for session context"
+    },
+    "image_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of uploaded context images"
+    },
+    "general_context_text": {
+      "type": "string",
+      "description": "General text context pasted by the user before recording"
+    },
+    "agenda_text": {
+      "type": "string",
+      "description": "Typed or pasted agenda text"
+    },
+    "agenda_file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of uploaded agenda files (PDF/Word)"
+    },
+    "manual_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Manually added notes during recording session"
+    },
+    "storage_tier": {
+      "type": "string",
+      "enum": [
+        "hot",
+        "archived"
+      ],
+      "default": "hot",
+      "description": "Storage tier: hot = active, archived = moved to archive after 30 days inactivity"
+    },
+    "archived_at": {
+      "type": "string",
+      "description": "ISO datetime when session was moved to archive"
+    },
+    "scheduled_deletion_at": {
+      "type": "string",
+      "description": "ISO datetime when archived session will be permanently deleted (60 days after archival)"
+    },
+    "deletion_notified_at": {
+      "type": "string",
+      "description": "ISO datetime when user was notified of upcoming deletion"
+    },
+    "restore_requested_at": {
+      "type": "string",
+      "description": "ISO datetime when user requested restore from archive"
+    },
+    "restore_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "retrieving",
+        "restored"
+      ],
+      "default": "none",
+      "description": "Restore status for archived sessions"
+    },
+    "last_accessed_at": {
+      "type": "string",
+      "description": "ISO datetime when session was last viewed/accessed by user"
+    },
+    "speaker_mapping": {
+      "type": "object",
+      "description": "Maps original speaker names (e.g. 'Speaker 1') to custom names (e.g. 'Ali Ahmed')"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "recording",
+        "audio_upload",
+        "video_url",
+        "text",
+        "images"
+      ],
+      "description": "Source of the session"
+    }
+  },
+  "required": [
+    "title",
+    "user_email"
+  ],
+  "rls": {}
+}

@@ -1,0 +1,42 @@
+{
+  "name": "FolderReport",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Owner email"
+    },
+    "folder_name": {
+      "type": "string",
+      "description": "Folder this report belongs to"
+    },
+    "session_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of sessions included"
+    },
+    "session_count": {
+      "type": "number",
+      "description": "Number of sessions"
+    },
+    "report_data": {
+      "type": "object",
+      "description": "Full AI-generated report JSON"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO datetime when generated"
+    },
+    "title": {
+      "type": "string",
+      "description": "Report title"
+    }
+  },
+  "required": [
+    "user_email",
+    "folder_name",
+    "report_data"
+  ]
+}

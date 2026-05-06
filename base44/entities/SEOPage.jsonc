@@ -1,0 +1,97 @@
+{
+  "name": "SEOPage",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "URL slug for the page"
+    },
+    "title": {
+      "type": "string",
+      "description": "SEO-optimized page title (<60 chars)"
+    },
+    "meta_description": {
+      "type": "string",
+      "description": "Meta description (<160 chars)"
+    },
+    "h1": {
+      "type": "string",
+      "description": "Main H1 heading"
+    },
+    "content": {
+      "type": "string",
+      "description": "Full page HTML/markdown content"
+    },
+    "target_keyword": {
+      "type": "string",
+      "description": "Primary target keyword"
+    },
+    "secondary_keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Secondary keywords"
+    },
+    "page_type": {
+      "type": "string",
+      "enum": [
+        "landing",
+        "blog",
+        "programmatic",
+        "pillar"
+      ],
+      "description": "Type of SEO page"
+    },
+    "template_variable": {
+      "type": "string",
+      "description": "The variable used in programmatic page (e.g. persona, industry)"
+    },
+    "seo_score": {
+      "type": "number",
+      "description": "SEO score 0-100"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "schema_markup": {
+      "type": "string",
+      "description": "JSON-LD schema markup"
+    },
+    "og_title": {
+      "type": "string"
+    },
+    "og_description": {
+      "type": "string"
+    },
+    "canonical_url": {
+      "type": "string"
+    },
+    "word_count": {
+      "type": "number"
+    },
+    "readability_score": {
+      "type": "number"
+    },
+    "internal_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "estimated_traffic": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "title",
+    "target_keyword",
+    "page_type"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "name": "StudyRecord",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "ID of the source session"
+    },
+    "session_title": {
+      "type": "string",
+      "description": "Cached title of the session"
+    },
+    "session_type": {
+      "type": "string",
+      "description": "Class, Lecture, or Workshop"
+    },
+    "activity_type": {
+      "type": "string",
+      "enum": [
+        "flashcards",
+        "quiz"
+      ],
+      "description": "Type of study activity"
+    },
+    "score": {
+      "type": "number",
+      "description": "Quiz score percentage (0-100), or flashcards mastered count"
+    },
+    "total_items": {
+      "type": "number",
+      "description": "Total flashcards or questions"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "description": "Quiz difficulty (for quiz records)"
+    },
+    "study_date": {
+      "type": "string",
+      "description": "ISO date of study activity"
+    },
+    "next_review_date": {
+      "type": "string",
+      "description": "ISO date of next suggested spaced-repetition review"
+    },
+    "review_interval_days": {
+      "type": "number",
+      "description": "Days until next review (spaced repetition interval)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Topics/tags from the source session"
+    }
+  },
+  "required": [
+    "user_email",
+    "session_id",
+    "activity_type",
+    "study_date"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "SupportRequest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name of the requester"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "subject": {
+      "type": "string",
+      "enum": [
+        "General Question",
+        "Bug Report",
+        "Billing Issue",
+        "Feature Request",
+        "Account Issue",
+        "Other"
+      ],
+      "description": "Support request subject category"
+    },
+    "message": {
+      "type": "string",
+      "description": "Detailed message or description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "resolved"
+      ],
+      "default": "open",
+      "description": "Status of the support request"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "subject",
+    "message"
+  ]
+}

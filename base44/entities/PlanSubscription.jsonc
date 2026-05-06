@@ -1,0 +1,83 @@
+{
+  "name": "PlanSubscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "plan_type": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "enterprise"
+      ],
+      "description": "Current subscription plan",
+      "default": "free"
+    },
+    "ads_enabled": {
+      "type": "boolean",
+      "description": "Whether user has opted in to ads for extra daily minutes",
+      "default": true
+    },
+    "daily_minutes_used": {
+      "type": "number",
+      "description": "Minutes used today (resets daily) - for free plan",
+      "default": 0
+    },
+    "daily_reset_date": {
+      "type": "string",
+      "description": "ISO date of last daily reset (YYYY-MM-DD)"
+    },
+    "daily_bonus_minutes": {
+      "type": "number",
+      "description": "Extra minutes unlocked today by watching ads",
+      "default": 0
+    },
+    "monthly_minutes_used": {
+      "type": "number",
+      "description": "Minutes used this billing month - for pro plan",
+      "default": 0
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due",
+        "trialing"
+      ],
+      "description": "Stripe subscription status",
+      "default": "active"
+    },
+    "billing_interval": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "yearly"
+      ],
+      "description": "Billing interval for Pro plan"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Active Stripe subscription ID"
+    },
+    "current_period_start": {
+      "type": "string",
+      "description": "ISO datetime of current billing period start"
+    },
+    "current_period_end": {
+      "type": "string",
+      "description": "ISO datetime of current billing period end"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan_type"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "profile_photo_url": {
+      "type": "string",
+      "description": "URL of the user's profile photo"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short user bio"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "location": {
+      "type": "string",
+      "description": "City or country"
+    },
+    "job_title": {
+      "type": "string",
+      "description": "Job title or role"
+    },
+    "ai_provider": {
+      "type": "string",
+      "enum": [
+        "app_default",
+        "openai",
+        "google",
+        "amazon",
+        "azure",
+        "custom"
+      ],
+      "default": "app_default",
+      "description": "Preferred speech-to-text and AI provider"
+    },
+    "openai_api_key": {
+      "type": "string",
+      "description": "User's personal OpenAI API key"
+    },
+    "google_stt_api_key": {
+      "type": "string",
+      "description": "User's Google Cloud Speech-to-Text API key"
+    },
+    "amazon_transcribe_key": {
+      "type": "string",
+      "description": "AWS Access Key ID for Amazon Transcribe"
+    },
+    "amazon_transcribe_secret": {
+      "type": "string",
+      "description": "AWS Secret Access Key for Amazon Transcribe"
+    },
+    "amazon_region": {
+      "type": "string",
+      "description": "AWS region for Amazon Transcribe (e.g. us-east-1)",
+      "default": "us-east-1"
+    },
+    "azure_speech_key": {
+      "type": "string",
+      "description": "Azure Cognitive Services Speech API key"
+    },
+    "azure_speech_region": {
+      "type": "string",
+      "description": "Azure region for Speech service (e.g. eastus)",
+      "default": "eastus"
+    },
+    "custom_llm_endpoint": {
+      "type": "string",
+      "description": "Base URL of the custom LLM API endpoint (OpenAI-compatible)"
+    },
+    "custom_llm_api_key": {
+      "type": "string",
+      "description": "API key for the custom LLM service"
+    },
+    "custom_llm_model": {
+      "type": "string",
+      "description": "Model name to use with the custom LLM (e.g. llama3, mistral)"
+    }
+  },
+  "required": []
+}

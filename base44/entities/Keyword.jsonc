@@ -1,0 +1,85 @@
+{
+  "name": "Keyword",
+  "type": "object",
+  "properties": {
+    "keyword": {
+      "type": "string",
+      "description": "The keyword phrase"
+    },
+    "seed_keyword": {
+      "type": "string",
+      "description": "Parent seed keyword"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "seed",
+        "long_tail",
+        "question",
+        "related"
+      ],
+      "description": "Keyword type"
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "informational",
+        "transactional",
+        "navigational",
+        "commercial"
+      ],
+      "description": "Search intent"
+    },
+    "difficulty_score": {
+      "type": "number",
+      "description": "Keyword difficulty 0-100"
+    },
+    "volume_estimate": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "very_high"
+      ],
+      "description": "Estimated monthly search volume tier"
+    },
+    "conversion_potential": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Conversion potential"
+    },
+    "priority_score": {
+      "type": "number",
+      "description": "Overall priority score 0-100"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "researched",
+        "targeting",
+        "ranking",
+        "ignored"
+      ],
+      "default": "researched"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ar"
+      ],
+      "default": "en"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "keyword"
+  ]
+}

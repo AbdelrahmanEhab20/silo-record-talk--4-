@@ -1,0 +1,36 @@
+{
+  "name": "WorkspaceMember",
+  "type": "object",
+  "properties": {
+    "workspace_id": {
+      "type": "string",
+      "description": "ID of the workspace"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the member"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "member"
+      ],
+      "description": "Role in workspace"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "active"
+      ],
+      "description": "Membership status"
+    }
+  },
+  "required": [
+    "workspace_id",
+    "user_email",
+    "role",
+    "status"
+  ]
+}

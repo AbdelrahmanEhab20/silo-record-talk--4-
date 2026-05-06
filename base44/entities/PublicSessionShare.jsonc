@@ -1,0 +1,36 @@
+{
+  "name": "PublicSessionShare",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "ID of the shared session"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the user who created the share"
+    },
+    "share_code": {
+      "type": "string",
+      "description": "Unique code to access the shared session"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO datetime when the share expires (optional)"
+    },
+    "access_count": {
+      "type": "number",
+      "description": "Number of times this share has been accessed",
+      "default": 0
+    },
+    "title": {
+      "type": "string",
+      "description": "Cached session title for display"
+    }
+  },
+  "required": [
+    "session_id",
+    "owner_email",
+    "share_code"
+  ]
+}
