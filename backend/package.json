@@ -9,9 +9,11 @@
     "start": "node src/server.js",
     "worker": "node src/worker.js",
     "lint": "eslint src --ext .js",
-    "migrate:base44": "node scripts/migrate-base44-export.js"
+    "migrate:base44": "node scripts/migrate-base44-export.js",
+    "seed:minimal": "node scripts/seed-minimal.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

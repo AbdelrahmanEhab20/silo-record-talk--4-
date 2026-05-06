@@ -40,6 +40,7 @@ import ArchivedSessions from "./pages/ArchivedSessions";
 import LearningProgress from "./pages/LearningProgress";
 import Courses from "./pages/Courses";
 import AdminSettings from "./pages/AdminSettings";
+import Login from "./pages/Login";
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -78,7 +79,7 @@ const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated) {
     return (
       <Navigate
-        to="/"
+        to="/login"
         replace
         state={{ from: `${location.pathname}${location.search}` }}
       />
@@ -98,7 +99,7 @@ const AuthenticatedApp = () => {
       return <UserNotRegisteredError />;
     }
     if (authError.type === "auth_required") {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/login" replace />;
     }
   }
 
@@ -110,6 +111,14 @@ const AuthenticatedApp = () => {
         element={
           <PublicOnlyRoute>
             <Landing />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <Login />
           </PublicOnlyRoute>
         }
       />

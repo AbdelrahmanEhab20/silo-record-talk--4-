@@ -116,8 +116,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    appClient.auth.redirectToLogin(window.location.href);
+    appClient.auth.redirectToLogin(window.location.pathname + window.location.search);
   };
 
   return (

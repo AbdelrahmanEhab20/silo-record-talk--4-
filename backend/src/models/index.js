@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true, index: true },
     full_name: String,
+    password_hash: { type: String, select: false },
     plan: { type: String, default: "free" },
     minutes_balance: { type: Number, default: 0 },
     credits_balance: { type: Number, default: 0 }

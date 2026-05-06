@@ -34,12 +34,18 @@ export const appClient = {
       if (data?.token) setAuthToken(data.token);
       return data;
     },
+    async login(email, password) {
+      const data = await apiRequest("/auth/login", { method: "POST", body: { email, password } });
+      if (data?.token) setAuthToken(data.token);
+      return data;
+    },
     logout() {
       setAuthToken(null);
       return apiRequest("/auth/logout", { method: "POST" }).catch(() => null);
     },
-    redirectToLogin() {
-      window.location.href = "/login";
+    redirectToLogin(returnTo = "") {
+      const next = returnTo ? `?next=${encodeURIComponent(returnTo)}` : "";
+      window.location.href = `/login${next}`;
     }
   },
   entities: {

@@ -1,9 +1,10 @@
 import express from "express";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import { config } from "../config/index.js";
 import { requireAuth } from "../middleware/auth.js";
-import { entityModels, Job } from "../models/index.js";
+import { entityModels, Job, User } from "../models/index.js";
 import { functionHandlers } from "../services/functionHandlers.js";
 
 const router = express.Router();
@@ -22,6 +23,34 @@ router.post("/auth/dev-login", async (req, res) => {
   if (!email) return res.status(400).json({ error: { message: "email is required" } });
   const token = jwt.sign({ email }, config.jwtSecret, { expiresIn: "7d" });
   res.json({ token, user: { email } });
+});
+
+router.post("/auth/login", async (req, res) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const password = String(req.body?.password || "");
+  if (!email || !password) {
+    return res.status(400).json({ error: { code: "INVALID_INPUT", message: "Email and password are required" } });
+  }
+
+  const user = await User.findOne({ email }).select("+password_hash").lean();
+  if (!user?.password_hash) {
+    return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } });
+  }
+
+  const ok = await bcrypt.compare(password, user.password_hash);
+  if (!ok) {
+    return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } });
+  }
+
+  const token = jwt.sign({ email: user.email }, config.jwtSecret, { expiresIn: "7d" });
+  return res.json({
+    token,
+    user: {
+      email: user.email,
+      full_name: user.full_name || "",
+      plan: user.plan || "free"
+    }
+  });
 });
 
 router.get("/auth/me", requireAuth, (req, res) => {
