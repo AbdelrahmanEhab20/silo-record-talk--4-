@@ -1,5 +1,16 @@
-const API_BASE =
-  /** @type {any} */ (import.meta)?.env?.VITE_API_BASE_URL || "http://localhost:5000/api";
+const rawApiBase = String(
+  /** @type {any} */ (import.meta)?.env?.VITE_API_BASE_URL || ""
+).trim();
+const isBrowser = typeof window !== "undefined";
+
+function resolveApiBase() {
+  if (rawApiBase) return rawApiBase.replace(/\/+$/, "");
+  if (/** @type {any} */ (import.meta)?.env?.DEV) return "http://localhost:5000/api";
+  if (isBrowser) return `${window.location.origin}/api`;
+  return "http://localhost:5000/api";
+}
+
+const API_BASE = resolveApiBase();
 const TOKEN_KEY = "silo_auth_token";
 
 function readToken() {
@@ -38,15 +49,36 @@ export async function apiRequest(path, { method = "GET", body, headers = {} } = 
   if (!(body instanceof FormData)) requestHeaders["Content-Type"] = "application/json";
   if (token) requestHeaders.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: requestHeaders,
-    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: requestHeaders,
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
+    });
+  } catch (cause) {
+    const err = /** @type {any} */ (new Error(`Network error while calling ${API_BASE}${path}. Verify VITE_API_BASE_URL and backend CORS settings.`));
+    err.status = 0;
+    err.data = null;
+    err.cause = cause;
+    throw err;
+  }
+
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+  }
   if (!response.ok) {
-    const err = /** @type {any} */ (new Error(data?.error?.message || `Request failed ${response.status}`));
+    const message =
+      data?.error?.message ||
+      (typeof data?.raw === "string" ? data.raw.slice(0, 200) : "") ||
+      `Request failed ${response.status}`;
+    const err = /** @type {any} */ (new Error(message));
     err.status = response.status;
     err.data = data;
     throw err;
