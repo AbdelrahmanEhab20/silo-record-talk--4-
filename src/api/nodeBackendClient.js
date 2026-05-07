@@ -38,19 +38,26 @@ export async function apiRequest(path, { method = "GET", body, headers = {} } = 
   if (!API_BASE && !isDev) {
     throw missingApiBaseError();
   }
+  const requestUrl = `${API_BASE}${path}`;
   const requestHeaders = { ...headers };
   if (!(body instanceof FormData)) requestHeaders["Content-Type"] = "application/json";
   if (token) requestHeaders.Authorization = `Bearer ${token}`;
 
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetch(requestUrl, {
       method,
       headers: requestHeaders,
       body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
     });
   } catch (cause) {
-    const err = /** @type {any} */ (new Error(`Network error while calling ${API_BASE}${path}. Verify VITE_API_BASE_URL and backend CORS settings.`));
+    console.error("[api-request] Network failure", {
+      url: requestUrl,
+      method,
+      hasAuthToken: Boolean(token),
+      cause
+    });
+    const err = /** @type {any} */ (new Error(`Network error while calling ${requestUrl}. Verify VITE_API_BASE_URL and backend CORS settings.`));
     err.status = 0;
     err.data = null;
     err.cause = cause;
@@ -71,6 +78,13 @@ export async function apiRequest(path, { method = "GET", body, headers = {} } = 
       data?.error?.message ||
       (typeof data?.raw === "string" ? data.raw.slice(0, 200) : "") ||
       `Request failed ${response.status}`;
+    console.error("[api-request] Backend error response", {
+      url: requestUrl,
+      method,
+      status: response.status,
+      message,
+      data
+    });
     const err = /** @type {any} */ (new Error(message));
     err.status = response.status;
     err.data = data;
