@@ -9,8 +9,8 @@ export default function Login() {
   const location = useLocation();
   const { isDark } = useTheme();
   const { checkAppState } = useAuth();
-  const [email, setEmail] = useState("owner@silo.local");
-  const [password, setPassword] = useState("Silo12345!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

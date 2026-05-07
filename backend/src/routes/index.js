@@ -19,6 +19,9 @@ router.get("/auth/session", (req, res) => {
 });
 
 router.post("/auth/dev-login", async (req, res) => {
+  if (config.nodeEnv === "production") {
+    return res.status(404).json({ error: { code: "NOT_FOUND", message: "Not found" } });
+  }
   const email = req.body?.email;
   if (!email) return res.status(400).json({ error: { message: "email is required" } });
   const token = jwt.sign({ email }, config.jwtSecret, { expiresIn: "7d" });
