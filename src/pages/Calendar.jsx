@@ -68,14 +68,18 @@ export default function Calendar() {
 
   // ── Connect handler (Rule 3 — popup poll) ─────────────────────
   const handleConnect = async () => {
-    const url = await appClient.connectors.connectAppUser(CONNECTOR_ID);
-    const popup = window.open(url, "_blank");
-    const timer = setInterval(() => {
-      if (!popup || popup.closed) {
-        clearInterval(timer);
-        fetchGcEvents();
-      }
-    }, 500);
+    try {
+      const url = await appClient.connectors.connectAppUser(CONNECTOR_ID);
+      const popup = window.open(url, "_blank");
+      const timer = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(timer);
+          fetchGcEvents();
+        }
+      }, 500);
+    } catch {
+      setConnected(false);
+    }
   };
 
   const handleDisconnect = async () => {

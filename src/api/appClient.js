@@ -71,6 +71,14 @@ export const appClient = {
       return apiRequest(`/functions/${name}/invoke`, { method: "POST", body: payload });
     }
   },
+  connectors: {
+    async connectAppUser() {
+      throw new Error("Connector auth is not configured on owned backend");
+    },
+    async disconnectAppUser() {
+      return { success: true };
+    }
+  },
   integrations: {
     Core: {
       async UploadFile({ file }) {

@@ -60,7 +60,8 @@ const ACTIVE_STATUSES = new Set([
 export default function SessionDetail() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
-  const sessionId = urlParams.get("id");
+  const rawSessionId = urlParams.get("id");
+  const sessionId = rawSessionId && rawSessionId !== "undefined" ? rawSessionId : null;
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [summaryText, setSummaryText] = useState(null);
@@ -90,6 +91,10 @@ export default function SessionDetail() {
 
   const queryClient = useQueryClient();
   const { isDark } = useTheme();
+
+  useEffect(() => {
+    if (!sessionId) navigate("/home", { replace: true });
+  }, [sessionId, navigate]);
 
   useEffect(() => {
     appClient.auth.me().then(async (userData) => {

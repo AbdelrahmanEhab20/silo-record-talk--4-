@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { appClient } from '@/api/appClient';
+import { hasStoredAuthToken } from '@/api/nodeBackendClient';
 import { appParams } from '@/lib/app-params';
 
 const AuthContext = createContext();
@@ -70,6 +71,13 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+      if (error?.status === 0 && hasStoredAuthToken()) {
+        // Render free instances can cold-start; keep user state during transient network failures.
+        setIsAuthenticated(true);
+        setIsLoadingPublicSettings(false);
+        setIsLoadingAuth(false);
+        return;
+      }
       setAuthError({
         type: 'unknown',
         message: error.message || 'An unexpected error occurred'
@@ -89,6 +97,11 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
     } catch (error) {
       console.error('User auth check failed:', error);
+      if (error?.status === 0 && hasStoredAuthToken()) {
+        setIsLoadingAuth(false);
+        setIsAuthenticated(true);
+        return;
+      }
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       

@@ -13,6 +13,17 @@ function readToken() {
 
 let token = readToken();
 
+function normalizeIds(value) {
+  if (Array.isArray(value)) return value.map(normalizeIds);
+  if (!value || typeof value !== "object") return value;
+  const out = { ...value };
+  if ((out.id === undefined || out.id === null) && out._id !== undefined && out._id !== null) {
+    out.id = String(out._id);
+  }
+  for (const key of Object.keys(out)) out[key] = normalizeIds(out[key]);
+  return out;
+}
+
 export function setAuthToken(value) {
   token = value || null;
   try {
@@ -21,6 +32,10 @@ export function setAuthToken(value) {
   } catch {
     // ignore
   }
+}
+
+export function hasStoredAuthToken() {
+  return Boolean(token || readToken());
 }
 
 /**
@@ -90,5 +105,5 @@ export async function apiRequest(path, { method = "GET", body, headers = {} } = 
     err.data = data;
     throw err;
   }
-  return data;
+  return normalizeIds(data);
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useNavigate, Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
@@ -27,7 +27,7 @@ function extractActionItems(session) {
     const data = typeof session.summary_text === "string" ? JSON.parse(session.summary_text) : session.summary_text;
     return (data.action_items || []).map(a => ({
       ...a,
-      sessionId: session.id,
+      sessionId: session.id || session._id,
       sessionTitle: session.title,
       sessionDate: session.created_date,
       deadlineDate: parseDeadline(a.deadline),
@@ -86,7 +86,9 @@ export default function Dashboard() {
       };
     });
     sessions.forEach((s) => {
+      if (!s.created_date) return;
       const d = parseISO(s.created_date);
+      if (!isValid(d)) return;
       const w = weeks.find((w) => isWithinInterval(d, { start: w.start, end: w.end }));
       if (w) w.count += 1;
     });
@@ -132,6 +134,7 @@ export default function Dashboard() {
     sessions.forEach((s) => {
       if (!s.created_date) return;
       const sd = parseISO(s.created_date);
+      if (!isValid(sd)) return;
       const dateStr = sd.toISOString().split('T')[0];
       const day = days.find((d) => d.dateStr === dateStr);
       if (day) day.count += 1;

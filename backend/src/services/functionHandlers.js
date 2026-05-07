@@ -134,5 +134,12 @@ export const functionHandlers = {
       { upsert: true, new: true }
     ).lean();
     return ok({ initialized: true, subscription: doc });
+  },
+
+  async googleCalendarUser(payload) {
+    const action = String(payload?.action || "list");
+    if (action === "list") return ok({ events: [] });
+    if (action === "create") return ok({ event_id: "", status: "not_connected" });
+    return ok({ events: [] });
   }
 };
