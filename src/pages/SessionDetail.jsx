@@ -91,6 +91,8 @@ export default function SessionDetail() {
 
   const queryClient = useQueryClient();
   const { isDark } = useTheme();
+  const createdAtDate = session?.created_date ? new Date(session.created_date) : null;
+  const hasValidCreatedAt = createdAtDate && !isNaN(createdAtDate.getTime());
 
   useEffect(() => {
     if (!sessionId) navigate("/home", { replace: true });
@@ -556,10 +558,12 @@ export default function SessionDetail() {
             <div className={`flex items-center gap-4 mb-4 text-xs ${isDark ? "text-white/30" : "text-gray-400"} flex-wrap`}>
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3 h-3" />
-                {format(new Date(session.created_date), "MMMM d, yyyy")}
+                {hasValidCreatedAt ? format(createdAtDate, "MMMM d, yyyy") : "Unknown date"}
               </span>
               {(() => {
-                const start = new Date(session.created_date.endsWith('Z') ? session.created_date : session.created_date + 'Z');
+                const raw = String(session.created_date || "");
+                if (!raw) return null;
+                const start = new Date(raw.endsWith('Z') ? raw : `${raw}Z`);
                 if (isNaN(start.getTime())) return null;
                 const startStr = format(start, "h:mm a");
                 if (totalDuration) {

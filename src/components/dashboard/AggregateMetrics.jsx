@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Loader2, TrendingUp, Clock, Target, Zap } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Loader2, TrendingUp, Target, Zap } from "lucide-react";
 
 export default function AggregateMetrics({ sessions, subscription }) {
+  const isValidDate = (d) => d instanceof Date && !Number.isNaN(d.getTime());
   const { isDark } = useTheme();
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,9 +79,12 @@ export default function AggregateMetrics({ sessions, subscription }) {
   const generateFrequencyData = (sessions) => {
     const weeks = {};
     sessions.forEach(s => {
+      if (!s?.created_date) return;
       const date = new Date(s.created_date);
+      if (!isValidDate(date)) return;
       const weekStart = new Date(date);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      if (!isValidDate(weekStart)) return;
       const weekKey = weekStart.toISOString().split("T")[0];
       weeks[weekKey] = (weeks[weekKey] || 0) + 1;
     });
@@ -96,6 +100,10 @@ export default function AggregateMetrics({ sessions, subscription }) {
 
   const generateSentimentTrend = async (sessions) => {
     const sortedSessions = [...sessions]
+      .filter((s) => {
+        const d = new Date(s?.created_date || "");
+        return isValidDate(d);
+      })
       .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
       .slice(-12)
       .filter(s => s.summary_text || s.title);
@@ -144,8 +152,11 @@ One entry per session, in the same order.`,
     const scores = result?.scores || [];
     return sortedSessions.map((s, i) => {
       const entry = scores.find(x => x.index === i);
+      const created = new Date(s.created_date);
       return entry ? {
-        date: new Date(s.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        date: isValidDate(created)
+          ? created.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+          : "Unknown",
         sentiment: Math.round(Math.max(0, Math.min(100, entry.score))),
         title: s.title
       } : null;
@@ -219,7 +230,7 @@ One entry per session, in the same order.`,
               <Tooltip
                 contentStyle={{ backgroundColor: isDark ? "#1C1C1E" : "#fff", border: `1px solid ${isDark ? "#ffffff20" : "#e5e7eb"}`, borderRadius: 10, fontSize: 12 }}
                 labelStyle={{ color: isDark ? "#fff" : "#000" }}
-                formatter={(value, name, props) => {
+                formatter={(value, _name, _props) => {
                   const label = value >= 56 ? '😊 Positive' : value >= 31 ? '😐 Neutral' : '😟 Negative';
                   return [`${value}/100 — ${label}`, 'Sentiment'];
                 }}

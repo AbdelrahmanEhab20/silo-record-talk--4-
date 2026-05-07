@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
 import {
-  Folder, Sparkles, Loader2, ChevronRight, CheckSquare,
+  Folder, Sparkles, Loader2, CheckSquare,
   BarChart2, AlertCircle, TrendingUp, Users, MessageSquare,
   Zap, ShieldAlert, Brain, Target, ArrowUpRight, ArrowDownRight, Minus,
   Check, ChevronDown, SlidersHorizontal
@@ -95,25 +95,32 @@ export default function Insights() {
 
   useEffect(() => {
     const init = async () => {
-      const me = await appClient.auth.me();
-      setUser(me);
-      const [allSessions, allReports] = await Promise.all([
-        appClient.entities.Session.filter({ user_email: me.email }, "-created_date"),
-        appClient.entities.FolderReport.filter({ user_email: me.email }, "-created_date"),
-      ]);
-      const nonSub = allSessions.filter(s => !s.is_subsession);
-      setSessions(nonSub);
-      const uniqueFolders = [...new Set(nonSub.filter(s => s.folder).map(s => s.folder))].sort();
-      setFolders(uniqueFolders);
-      // Build a map of folder → latest cached report
-      const reportMap = {};
-      for (const r of allReports) {
-        if (!reportMap[r.folder_name] || r.created_date > reportMap[r.folder_name].created_date) {
-          reportMap[r.folder_name] = r;
+      try {
+        const me = await appClient.auth.me();
+        setUser(me);
+        const [allSessionsRaw, allReportsRaw] = await Promise.all([
+          appClient.entities.Session.filter({ user_email: me.email }, "-created_date"),
+          appClient.entities.FolderReport.filter({ user_email: me.email }, "-created_date").catch(() => []),
+        ]);
+        const allSessions = Array.isArray(allSessionsRaw) ? allSessionsRaw : [];
+        const allReports = Array.isArray(allReportsRaw) ? allReportsRaw : [];
+        const nonSub = allSessions.filter(s => !s.is_subsession);
+        setSessions(nonSub);
+        const uniqueFolders = [...new Set(nonSub.filter(s => s.folder).map(s => s.folder))].sort();
+        setFolders(uniqueFolders);
+        // Build a map of folder → latest cached report
+        const reportMap = {};
+        for (const r of allReports) {
+          if (!reportMap[r.folder_name] || r.created_date > reportMap[r.folder_name].created_date) {
+            reportMap[r.folder_name] = r;
+          }
         }
+        setCachedReports(reportMap);
+      } catch (e) {
+        setError(e?.message || "Failed to load insights");
+      } finally {
+        setLoading(false);
       }
-      setCachedReports(reportMap);
-      setLoading(false);
     };
     init();
   }, []);
@@ -340,7 +347,12 @@ export default function Insights() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className={`text-xs font-medium truncate ${isChecked ? (isDark ? "text-purple-200" : "text-purple-800") : text}`}>{s.title}</p>
-                                    <p className={`text-[10px] ${sub}`}>{new Date(s.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{s.duration ? ` · ${Math.round(s.duration / 60)}m` : ""}</p>
+                                    <p className={`text-[10px] ${sub}`}>
+                                      {!s.created_date || Number.isNaN(new Date(s.created_date).getTime())
+                                        ? "Unknown date"
+                                        : new Date(s.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                      {s.duration ? ` · ${Math.round(s.duration / 60)}m` : ""}
+                                    </p>
                                   </div>
                                 </button>
                               );
@@ -352,7 +364,11 @@ export default function Insights() {
                       {/* Cached date */}
                       {cached && (
                         <div className={`px-4 pb-2 text-[10px] ${sub}`}>
-                          Last generated: {new Date(cached.generated_at || cached.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                          Last generated: {(() => {
+                            const d = new Date(cached.generated_at || cached.created_date || "");
+                            if (Number.isNaN(d.getTime())) return "Unknown";
+                            return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+                          })()}
                         </div>
                       )}
                     </div>
