@@ -1,22 +1,6 @@
-const rawApiBase = String(
-  /** @type {any} */ (import.meta)?.env?.VITE_API_BASE_URL || ""
-).trim();
-const isBrowser = typeof window !== "undefined";
-const isDev = Boolean((/** @type {any} */ (import.meta)?.env?.DEV));
+import { isDev, missingApiBaseError, resolveApiBaseUrl } from "@/lib/api-base";
 
-function missingApiBaseError() {
-  return new Error(
-    "Missing VITE_API_BASE_URL in production build. Set it in Vercel project env and redeploy."
-  );
-}
-
-function resolveApiBase() {
-  if (rawApiBase) return rawApiBase.replace(/\/+$/, "");
-  if (isDev) return "http://localhost:5000/api";
-  throw missingApiBaseError();
-}
-
-const API_BASE = resolveApiBase();
+const API_BASE = resolveApiBaseUrl();
 const TOKEN_KEY = "silo_auth_token";
 
 function readToken() {

@@ -16,6 +16,14 @@ function validateProd() {
   if (missing.length) {
     throw new Error(`Missing required production env vars: ${missing.join(", ")}`);
   }
+  const frontendUrl = String(process.env.FRONTEND_URL || "").trim();
+  const corsOrigins = parseList(process.env.CORS_ORIGINS);
+  if (!corsOrigins.includes(frontendUrl)) {
+    throw new Error(
+      "CORS_ORIGINS must include FRONTEND_URL in production. " +
+        `FRONTEND_URL=${frontendUrl}, CORS_ORIGINS=${corsOrigins.join(",")}`
+    );
+  }
 }
 
 validateProd();
