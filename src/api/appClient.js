@@ -72,7 +72,7 @@ export const appClient = {
     }
   },
   analytics: {
-    track() {
+    track(..._args) {
       // no-op placeholder; replace with Segment/PostHog if needed.
     }
   },

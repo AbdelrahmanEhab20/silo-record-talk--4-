@@ -178,13 +178,14 @@ export default function Recording() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      const win = /** @type {any} */ (window);
       clearInterval(timerRef.current);
       clearInterval(chunkTimerRef.current);
       clearInterval(analysisIntervalRef.current);
       clearInterval(autoSaveTimerRef.current);
-      if (window.__recordingWatchdogs) {
-        window.__recordingWatchdogs.forEach(wd => clearInterval(wd));
-        window.__recordingWatchdogs = [];
+      if (win.__recordingWatchdogs) {
+        win.__recordingWatchdogs.forEach(wd => clearInterval(wd));
+        win.__recordingWatchdogs = [];
       }
       if (recognitionRef.current) recognitionRef.current.abort();
       if (audioAnalyzerRef.current) audioAnalyzerRef.current.stop();
@@ -338,7 +339,9 @@ export default function Recording() {
           ? { deviceId: { ideal: selectedDeviceId }, echoCancellation: true, noiseSuppression: true }
           : { echoCancellation: true, noiseSuppression: true }
       });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const BrowserWindow = /** @type {any} */ (window);
+      const AudioContextCtor = BrowserWindow.AudioContext || BrowserWindow.webkitAudioContext;
+      const audioContext = new AudioContextCtor();
       const dest = audioContext.createMediaStreamDestination();
       audioContext.createMediaStreamSource(displayStream).connect(dest);
       audioContext.createMediaStreamSource(micStream).connect(dest);
@@ -376,7 +379,7 @@ export default function Recording() {
     //   appClient.functions.invoke('deductMinutes', { minutes: durationMins }).catch(() => {});
     // }
 
-    appClient.analytics.track({ eventName: "recording_ended", properties: { duration_seconds: snapshotDuration, has_transcript: !!rawTranscript } });
+    appClient.analytics.track();
 
     const { file_url: audioUrl } = await appClient.integrations.Core.UploadFile({ file: audioFile });
 
@@ -844,7 +847,8 @@ export default function Recording() {
     timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
 
     const useWhisperOnly = mode === AUDIO_MODES.INTERNAL || mode === AUDIO_MODES.SCREEN_AUDIO || mode === AUDIO_MODES.INTERNAL_MIC;
-    const SpeechRecognition = !useWhisperOnly ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+    const BrowserWindow = /** @type {any} */ (window);
+    const SpeechRecognition = !useWhisperOnly ? (BrowserWindow.SpeechRecognition || BrowserWindow.webkitSpeechRecognition) : null;
     if (SpeechRecognition) {
       whisperModeRef.current = false;
       interimIndexRef.current = null;
@@ -910,7 +914,7 @@ export default function Recording() {
     }
 
     setRecording(true);
-    appClient.analytics.track({ eventName: "recording_started", properties: { audio_mode: mode, language: selectedLanguage } });
+    appClient.analytics.track();
 
     if ('wakeLock' in navigator) {
       try {
@@ -937,8 +941,9 @@ export default function Recording() {
           console.warn(`No audio chunks for ${Math.round(timeSinceLastChunk / 1000)}s — audio capture may have stalled`);
         }
       }, 5000);
-      if (!window.__recordingWatchdogs) window.__recordingWatchdogs = [];
-      window.__recordingWatchdogs.push(watchdogInterval);
+      const win = /** @type {any} */ (window);
+      if (!win.__recordingWatchdogs) win.__recordingWatchdogs = [];
+      win.__recordingWatchdogs.push(watchdogInterval);
     }
   };
 
@@ -1372,7 +1377,7 @@ export default function Recording() {
               {/* Signal Quality + Audio Source Row */}
               <div className="w-full flex items-center justify-between gap-3">
                 <div className="flex-1">
-                  <SignalQualityIndicator soundLevel={soundLevel} isRecording={recording && !paused} audioMode={selectedMode} />
+                  <SignalQualityIndicator soundLevel={soundLevel} />
                 </div>
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium shrink-0 ${isDark ? 'bg-white/5 text-white/60' : 'bg-gray-100 text-gray-600'}`}>
                   <span>🎤</span>
@@ -1504,7 +1509,7 @@ export default function Recording() {
         {/* Language Selector */}
         <div className="mb-4">
           <p className={`text-xs font-semibold uppercase tracking-wider ${textSub} mb-3`}>Language</p>
-          <LanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} />
+          <LanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} loading={false} />
         </div>
 
         {/* Minutes Status */}

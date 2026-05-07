@@ -2,12 +2,18 @@ const rawApiBase = String(
   /** @type {any} */ (import.meta)?.env?.VITE_API_BASE_URL || ""
 ).trim();
 const isBrowser = typeof window !== "undefined";
+const isDev = Boolean((/** @type {any} */ (import.meta)?.env?.DEV));
+
+function missingApiBaseError() {
+  return new Error(
+    "Missing VITE_API_BASE_URL in production build. Set it in Vercel project env and redeploy."
+  );
+}
 
 function resolveApiBase() {
   if (rawApiBase) return rawApiBase.replace(/\/+$/, "");
-  if (/** @type {any} */ (import.meta)?.env?.DEV) return "http://localhost:5000/api";
-  if (isBrowser) return `${window.location.origin}/api`;
-  return "http://localhost:5000/api";
+  if (isDev) return "http://localhost:5000/api";
+  throw missingApiBaseError();
 }
 
 const API_BASE = resolveApiBase();
@@ -45,6 +51,9 @@ export function setAuthToken(value) {
  * @param {ApiRequestOptions=} options
  */
 export async function apiRequest(path, { method = "GET", body, headers = {} } = {}) {
+  if (!API_BASE && !isDev) {
+    throw missingApiBaseError();
+  }
   const requestHeaders = { ...headers };
   if (!(body instanceof FormData)) requestHeaders["Content-Type"] = "application/json";
   if (token) requestHeaders.Authorization = `Bearer ${token}`;

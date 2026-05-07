@@ -42,7 +42,7 @@ const LANGUAGES = [
 
 export { LANGUAGES };
 
-export default function LanguageSelector({ value, onChange, loading }) {
+export default function LanguageSelector({ value, onChange, loading = false }) {
   const { isDark } = useTheme();
 
   return (
