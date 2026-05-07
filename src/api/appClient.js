@@ -14,8 +14,19 @@ function createEntityClient(entity) {
     async delete(id) {
       return apiRequest(`/entities/${entity}/${id}`, { method: "DELETE" });
     },
-    async filter(filter = {}) {
-      return apiRequest(`/entities/${entity}?filter=${encodeURIComponent(JSON.stringify(filter))}`);
+    async filter(filter = {}, sort, limit) {
+      const params = new URLSearchParams();
+      params.set("filter", JSON.stringify(filter));
+      if (sort) params.set("sort", String(sort));
+      if (limit) params.set("limit", String(limit));
+      return apiRequest(`/entities/${entity}?${params.toString()}`);
+    },
+    async list(sort, limit) {
+      return this.filter({}, sort, limit);
+    },
+    subscribe(_handler) {
+      // Owned backend does not support realtime subscriptions yet.
+      return () => {};
     }
   };
 }
@@ -52,7 +63,8 @@ export const appClient = {
     User: createEntityClient("User"),
     Session: createEntityClient("Session"),
     Workspace: createEntityClient("Workspace"),
-    CreditLedger: createEntityClient("CreditLedger")
+    CreditLedger: createEntityClient("CreditLedger"),
+    PlanSubscription: createEntityClient("PlanSubscription")
   },
   functions: {
     async invoke(name, payload = {}) {

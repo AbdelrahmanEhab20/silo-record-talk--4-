@@ -15,7 +15,6 @@ import FolderSidebar from "@/components/FolderSidebar";
 import SessionCard from "@/components/session/SessionCard";
 import PullToRefresh from "@/components/PullToRefresh";
 import GoogleAd from "@/components/ads/GoogleAd";
-import ProcessingBanner from "@/components/session/ProcessingBanner";
 
 const TABS = ["All", "Meetings", "Ideas", "Saved"];
 
@@ -54,12 +53,17 @@ export default function Home() {
       try {
         const userData = await appClient.auth.me();
         setUser(userData);
-        await appClient.functions.invoke('initializeUserSubscription', {});
-        const subs = await appClient.entities.PlanSubscription.filter({ user_email: userData.email });
-        if (subs.length > 0) setSubscription(subs[0]);
-        setSessionsLoaded(true);
+        if (userData?.email) {
+          await appClient.functions
+            .invoke('initializeUserSubscription', { user_email: userData.email })
+            .catch(() => null);
+          const subs = await appClient.entities.PlanSubscription.filter({ user_email: userData.email });
+          if (subs.length > 0) setSubscription(subs[0]);
+        }
       } catch (error) {
         console.error('Failed to initialize:', error);
+      } finally {
+        setSessionsLoaded(true);
       }
     };
     initUser();

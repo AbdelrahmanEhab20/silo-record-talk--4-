@@ -53,6 +53,16 @@ const CreditLedgerSchema = new mongoose.Schema(
   baseOptions
 );
 
+const PlanSubscriptionSchema = new mongoose.Schema(
+  {
+    user_email: { type: String, required: true, index: true },
+    plan: { type: String, default: "free" },
+    status: { type: String, default: "active" },
+    monthly_minutes_used: { type: Number, default: 0 }
+  },
+  baseOptions
+);
+
 const JobSchema = new mongoose.Schema(
   {
     type: { type: String, required: true, index: true },
@@ -67,11 +77,14 @@ export const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export const Session = mongoose.models.Session || mongoose.model("Session", SessionSchema);
 export const Workspace = mongoose.models.Workspace || mongoose.model("Workspace", WorkspaceSchema);
 export const CreditLedger = mongoose.models.CreditLedger || mongoose.model("CreditLedger", CreditLedgerSchema);
+export const PlanSubscription =
+  mongoose.models.PlanSubscription || mongoose.model("PlanSubscription", PlanSubscriptionSchema);
 export const Job = mongoose.models.Job || mongoose.model("Job", JobSchema);
 
 export const entityModels = {
   User,
   Session,
   Workspace,
-  CreditLedger
+  CreditLedger,
+  PlanSubscription
 };

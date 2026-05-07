@@ -1,4 +1,4 @@
-import { CreditLedger, Session, User } from "../models/index.js";
+import { CreditLedger, PlanSubscription, Session, User } from "../models/index.js";
 
 function ok(data) {
   return { data };
@@ -116,5 +116,23 @@ export const functionHandlers = {
       await CreditLedger.create({ user_email: userEmail, type: "minutes", delta: minutes, reason: "rewardAdMinutes" });
     }
     return ok({ success: true });
+  },
+
+  async initializeUserSubscription(payload) {
+    const userEmail = String(payload?.user_email || "");
+    if (!userEmail) return ok({ initialized: false });
+    const doc = await PlanSubscription.findOneAndUpdate(
+      { user_email: userEmail },
+      {
+        $setOnInsert: {
+          user_email: userEmail,
+          plan: "free",
+          status: "active",
+          monthly_minutes_used: 0
+        }
+      },
+      { upsert: true, new: true }
+    ).lean();
+    return ok({ initialized: true, subscription: doc });
   }
 };
