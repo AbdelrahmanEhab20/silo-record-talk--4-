@@ -1,6 +1,5 @@
-const env = /** @type {any} */ (import.meta)?.env || {};
-const rawApiBase = String(env.VITE_API_BASE_URL || "").trim();
-const isDev = Boolean(env.DEV);
+const rawApiBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+const isDev = Boolean(import.meta.env.DEV);
 const isBrowser = typeof window !== "undefined";
 
 export function missingApiBaseError() {
