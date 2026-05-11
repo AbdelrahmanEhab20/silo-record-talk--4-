@@ -548,7 +548,7 @@ export default function Home() {
                   {/* Show ad after every 5th session */}
                   {(idx + 1) % 5 === 0 && (
                     <div className="py-1">
-                      <GoogleAd format="auto" subscription={subscription} />
+                      <GoogleAd adFormat="auto" subscription={subscription} />
                     </div>
                   )}
                   </React.Fragment>

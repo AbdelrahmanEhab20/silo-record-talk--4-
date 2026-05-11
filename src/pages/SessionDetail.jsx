@@ -140,8 +140,12 @@ export default function SessionDetail() {
         !!s.transcript_file_url;
       const hasSummary = !!(s.summary_text && String(s.summary_text).trim());
 
+      const rawSubs = queryClient.getQueryData(["subsessions", sessionId]);
+      const subList = Array.isArray(rawSubs) ? rawSubs : [];
+      const hasActiveSubsession = subList.some((x) => ACTIVE_STATUSES.has(x.processing_status));
+
       // Continue polling while processing OR subsessions processing OR transcript missing OR summary missing
-      const shouldPoll = isProcessing || hasActiveSubsessionProcessing || !hasTranscript || !hasSummary;
+      const shouldPoll = isProcessing || hasActiveSubsession || !hasTranscript || !hasSummary;
       if (!shouldPoll) {
         pollStartedAtRef.current = null;
         return false;
@@ -255,7 +259,8 @@ export default function SessionDetail() {
   };
 
   const titleMutation = useMutation({
-    mutationFn: async (newTitle) => {
+    mutationFn: async (/** @type {string} */ newTitle) => {
+      if (!sessionId) throw new Error("Missing session");
       return await appClient.entities.Session.update(sessionId, { title: newTitle.trim() });
     },
     onSuccess: () => {
@@ -606,7 +611,11 @@ export default function SessionDetail() {
           {/* Audio Player */}
           <div className="mb-8">
             {hasSubsessions ? (
-              <SubSessionAudioPlayers sessionId={sessionId} subsessions={subsessions} />
+              <SubSessionAudioPlayers
+                sessionId={sessionId}
+                subsessions={subsessions}
+                onTranscriptUpdated={() => queryClient.invalidateQueries({ queryKey: ["session", sessionId] })}
+              />
             ) : session.audio_file_url ? (
               <SingleSessionAudioPlayer
                 session={session}
@@ -621,7 +630,6 @@ export default function SessionDetail() {
                   setTranscriptText(t);
                   queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
                 }}
-                onAnalysisStarted={() => queryClient.invalidateQueries({ queryKey: ["session", sessionId] })}
               />
             )}
           </div>
@@ -688,7 +696,7 @@ export default function SessionDetail() {
           {/* Ad */}
           {currentSummary && (
             <div className="mb-8">
-              <GoogleAd format="auto" subscription={subscription} />
+              <GoogleAd adFormat="auto" subscription={subscription} />
             </div>
           )}
 
@@ -774,7 +782,7 @@ export default function SessionDetail() {
 
           {/* Ad */}
           <div className="mb-8">
-            <GoogleAd format="auto" subscription={subscription} />
+            <GoogleAd adFormat="auto" subscription={subscription} />
           </div>
 
           {/* Calendar Event Link */}

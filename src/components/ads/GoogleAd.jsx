@@ -5,13 +5,17 @@ import { useTheme } from '@/lib/ThemeContext';
 /**
  * GoogleAd - renders an AdSense auto ad unit
  * Only shows for free plan users (pass subscription prop to hide for Pro)
- * 
- * @param {string} slot - AdSense ad slot ID (optional, uses auto ads if omitted)
- * @param {string} format - 'auto' | 'fluid' | 'rectangle' (default: 'auto')
- * @param {object} subscription - if provided and plan_type === 'pro', ad is hidden
- * @param {string} className - extra wrapper classes
+ *
+ * @typedef {Object} GoogleAdProps
+ * @property {string} [slot] - AdSense ad slot ID (optional)
+ * @property {'auto'|'fluid'|'rectangle'} [adFormat]
+ * @property {{ plan_type?: string, subscription_status?: string }} [subscription]
+ * @property {string} [className]
+ *
+ * @param {GoogleAdProps} props
  */
-export default function GoogleAd({ slot, format = 'auto', subscription, className = '' }) {
+function GoogleAdInner(props) {
+  const { slot, adFormat = 'auto', subscription, className = '' } = props;
   const { isDark } = useTheme();
   const adRef = useRef(null);
   const pushed = useRef(false);
@@ -61,7 +65,7 @@ export default function GoogleAd({ slot, format = 'auto', subscription, classNam
           style={{ display: adFilled === false ? 'none' : 'block' }}
           data-ad-client="ca-pub-9081109939109003"
           data-ad-slot={slot}
-          data-ad-format={format}
+          data-ad-format={adFormat}
           data-full-width-responsive="true"
         />
         {/* Show rotating ads if AdSense didn't fill */}
@@ -70,3 +74,7 @@ export default function GoogleAd({ slot, format = 'auto', subscription, classNam
     </div>
   );
 }
+
+/** @type {import('react').FC<any>} */
+const GoogleAd = GoogleAdInner;
+export default GoogleAd;

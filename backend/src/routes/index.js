@@ -56,8 +56,28 @@ router.post("/auth/login", async (req, res) => {
   });
 });
 
-router.get("/auth/me", requireAuth, (req, res) => {
-  res.json({ email: req.user.email });
+router.get("/auth/me", requireAuth, async (req, res) => {
+  const email = req.user.email;
+  const doc = await User.findOne({ email }).lean();
+  if (!doc) {
+    return res.json({
+      email,
+      full_name: "",
+      plan: "free",
+      minutes_balance: 0,
+      credits_balance: 0,
+    });
+  }
+  res.json({
+    id: String(doc._id),
+    email: doc.email,
+    full_name: doc.full_name || "",
+    plan: doc.plan || "free",
+    minutes_balance: doc.minutes_balance ?? 0,
+    credits_balance: doc.credits_balance ?? 0,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  });
 });
 
 router.post("/auth/logout", (_req, res) => {
