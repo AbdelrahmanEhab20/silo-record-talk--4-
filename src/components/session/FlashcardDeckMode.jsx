@@ -166,7 +166,6 @@ export default function FlashcardDeckMode({ flashcards, onClose, onComplete }) {
           ) : (
             <motion.div
               key={currentIdx}
-              style={{ x: dragX, rotate }}
               drag="x"
               dragConstraints={{ left: -200, right: 200 }}
               dragElastic={0.15}
