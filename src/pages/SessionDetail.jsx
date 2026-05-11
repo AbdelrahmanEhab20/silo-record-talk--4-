@@ -91,8 +91,6 @@ export default function SessionDetail() {
 
   const queryClient = useQueryClient();
   const { isDark } = useTheme();
-  const createdAtDate = session?.created_date ? new Date(session.created_date) : null;
-  const hasValidCreatedAt = createdAtDate && !isNaN(createdAtDate.getTime());
 
   useEffect(() => {
     if (!sessionId) navigate("/home", { replace: true });
@@ -160,6 +158,9 @@ export default function SessionDetail() {
       return 5000;
     },
   });
+
+  const createdAtDate = session?.created_date ? new Date(session.created_date) : null;
+  const hasValidCreatedAt = createdAtDate && !isNaN(createdAtDate.getTime());
 
   // Fallback polling invalidation while subsessions are active
   useEffect(() => {
