@@ -389,7 +389,7 @@ export default function Recording() {
       duration: snapshotDuration,
       audio_file_url: audioUrl,
       transcript_text: rawTranscript,
-      processing_status: 'pending',
+      processing_status: 'done',
       manual_notes: serializeNotes(quickNotesRef.current),
       source: 'recording',
       billing_source: 'recording', // Patch 3: Add billing metadata
@@ -399,7 +399,7 @@ export default function Recording() {
 
     if (!processingTriggeredRef.current.has(session.id)) {
       processingTriggeredRef.current.add(session.id);
-      appClient.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
+      // appClient.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
     }
 
     return session;
@@ -439,7 +439,7 @@ export default function Recording() {
           audio_file_url: lastAudioUrl,
           transcript_text: rawLastTranscript,
           transcript_file_url: lastTranscriptFileUrl || undefined,
-          processing_status: 'pending',
+          processing_status: 'done',
           is_subsession: true,
           parent_session_id: mainSessionIdRef.current,
           manual_notes: serializeNotes(quickNotesRef.current),
@@ -451,7 +451,7 @@ export default function Recording() {
         setUploadStage('processing_last');
         let processedLastTranscript = rawLastTranscript;
         try {
-          await appClient.functions.invoke('processSessionBackground', { session_id: lastSub.id, force_transcribe: true });
+          // await appClient.functions.invoke('processSessionBackground', { session_id: lastSub.id, force_transcribe: true });
           const deadline = Date.now() + 60000;
           while (Date.now() < deadline) {
             await new Promise(r => setTimeout(r, 3000));
@@ -516,7 +516,7 @@ export default function Recording() {
           transcript_text: allTranscripts.slice(0, 10000),
           transcript_file_url: mergedTranscriptFileUrl || undefined,
           duration: totalDuration,
-          processing_status: 'pending',
+          processing_status: 'done',
           manual_notes: serializeNotes(quickNotesRef.current),
           ...sessionContext,
         });
@@ -550,7 +550,7 @@ export default function Recording() {
             audio_file_url: audioUrl,
             transcript_text: rawTranscript.slice(0, 10000),
             transcript_file_url: transcriptFileUrl || undefined,
-            processing_status: 'pending',
+            processing_status: 'done',
             manual_notes: serializeNotes(quickNotesRef.current),
             billing_source: 'recording', // Patch 3: Add billing metadata for single session update
             billable_minutes_estimate: Math.max(1, Math.ceil(lastDuration / 60)),
@@ -564,7 +564,7 @@ export default function Recording() {
             audio_file_url: audioUrl,
             transcript_text: rawTranscript.slice(0, 10000),
             transcript_file_url: transcriptFileUrl || undefined,
-            processing_status: 'pending',
+            processing_status: 'done',
             manual_notes: serializeNotes(quickNotesRef.current),
             source: 'recording',
             billing_source: 'recording', // Patch 3: Add billing metadata for single session create
@@ -574,7 +574,7 @@ export default function Recording() {
           sessionId = session.id;
         }
 
-        appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
+        // appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${sessionId}`);
       }
@@ -1593,7 +1593,5 @@ export default function Recording() {
         </div>
       </div>
     </div>
-  );
-}v>
   );
 }
