@@ -257,7 +257,7 @@ export default function Recording() {
           title,
           duration: currentDuration,
           transcript_text: rawTranscript,
-          processing_status: 'processing',
+          processing_status: 'done',
           manual_notes: serializeNotes(quickNotesRef.current),
           source: 'recording',
           ...sessionContext,
@@ -652,7 +652,7 @@ export default function Recording() {
               user_email: user.email,
               title: placeholderTitle,
               duration: 0,
-              processing_status: 'processing',
+              processing_status: 'done',
               is_subsession: false,
               source: 'recording',
               billing_source: 'recording', // Patch 3: Add billing metadata for main session
@@ -700,20 +700,40 @@ export default function Recording() {
             isSubsession: true,
             localId,
           }).then((session) => {
-            setSubsessions(prev => prev.map(s =>
-              s.localId === localId ? { ...s, status: 'processing', sessionId: session.id } : s
-            ));
-            const poll = setInterval(async () => {
-              try {
-                const updated = await appClient.entities.Session.get(session.id);
-                if (updated.processing_status === 'done' || updated.processing_status === 'failed') {
-                  clearInterval(poll);
-                  setSubsessions(prev => prev.map(s =>
-                    s.localId === localId ? { ...s, status: updated.processing_status, transcript: updated.transcript_text || s.transcript } : s
-                  ));
-                }
-              } catch {}
-            }, 4000);
+            const mergedLive = snapshotSegments.map((s) => `[${s.timestamp}] ${s.text}`).join("\n");
+            setSubsessions((prev) =>
+              prev.map((s) =>
+                s.localId === localId
+                  ? {
+                      ...s,
+                      status: session.processing_status === "failed" ? "failed" : "done",
+                      sessionId: session.id,
+                      transcript: session.transcript_text || mergedLive || s.transcript,
+                    }
+                  : s
+              )
+            );
+            if (session.processing_status !== "done" && session.processing_status !== "failed") {
+              const poll = setInterval(async () => {
+                try {
+                  const updated = await appClient.entities.Session.get(session.id);
+                  if (updated.processing_status === "done" || updated.processing_status === "failed") {
+                    clearInterval(poll);
+                    setSubsessions((prev) =>
+                      prev.map((s) =>
+                        s.localId === localId
+                          ? {
+                              ...s,
+                              status: updated.processing_status,
+                              transcript: updated.transcript_text || s.transcript,
+                            }
+                          : s
+                      )
+                    );
+                  }
+                } catch {}
+              }, 4000);
+            }
           }).catch(() => {
             setSubsessions(prev => prev.map(s =>
               s.localId === localId ? { ...s, status: 'failed' } : s
