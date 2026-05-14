@@ -27,7 +27,15 @@ const SessionSchema = new mongoose.Schema(
     processing_status: { type: String, default: "pending", index: true },
     tags: [String],
     summary_text: String,
-    manual_notes: [String]
+    manual_notes: [String],
+    parent_session_id: { type: String, index: true },
+    is_subsession: { type: Boolean, default: false },
+    is_flagged: { type: Boolean, default: false },
+    folder: String,
+    created_date: { type: Date, default: Date.now },
+    storage_tier: { type: String, enum: ["hot", "cold", "archived"], default: "hot" },
+    source_classification: String,
+    processed_at: Date
   },
   baseOptions
 );
@@ -73,6 +81,61 @@ const JobSchema = new mongoose.Schema(
   baseOptions
 );
 
+const WorkspaceMemberSchema = new mongoose.Schema(
+  {
+    workspace_id: { type: String, required: true, index: true },
+    user_email: { type: String, required: true, index: true },
+    role: { type: String, enum: ["owner", "member"], default: "member" },
+    status: { type: String, enum: ["active", "invited"], default: "active" }
+  },
+  baseOptions
+);
+
+const SharedSessionSchema = new mongoose.Schema(
+  {
+    session_id: { type: String, required: true, index: true },
+    workspace_id: { type: String, required: true, index: true },
+    permission: { type: String, enum: ["view", "edit"], default: "view" },
+    shared_by_email: { type: String, required: true },
+    shared_at: { type: Date, default: Date.now }
+  },
+  baseOptions
+);
+
+const PublicSessionShareSchema = new mongoose.Schema(
+  {
+    session_id: { type: String, required: true, index: true },
+    share_token: { type: String, required: true, unique: true, index: true },
+    expiration_date: Date,
+    access_count: { type: Number, default: 0 }
+  },
+  baseOptions
+);
+
+const StudyRecordSchema = new mongoose.Schema(
+  {
+    user_email: { type: String, required: true, index: true },
+    session_id: { type: String, index: true },
+    topic: String,
+    answer: String,
+    spaced_rep_score: { type: Number, default: 0 },
+    next_review_date: Date,
+    review_count: { type: Number, default: 0 }
+  },
+  baseOptions
+);
+
+const KeywordSchema = new mongoose.Schema(
+  {
+    workspace_id: { type: String, required: true, index: true },
+    keyword: { type: String, required: true },
+    search_volume: Number,
+    difficulty: Number,
+    status: { type: String, default: "pending" }
+  },
+  baseOptions
+);
+
 export const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export const Session = mongoose.models.Session || mongoose.model("Session", SessionSchema);
 export const Workspace = mongoose.models.Workspace || mongoose.model("Workspace", WorkspaceSchema);
@@ -80,11 +143,21 @@ export const CreditLedger = mongoose.models.CreditLedger || mongoose.model("Cred
 export const PlanSubscription =
   mongoose.models.PlanSubscription || mongoose.model("PlanSubscription", PlanSubscriptionSchema);
 export const Job = mongoose.models.Job || mongoose.model("Job", JobSchema);
+export const WorkspaceMember = mongoose.models.WorkspaceMember || mongoose.model("WorkspaceMember", WorkspaceMemberSchema);
+export const SharedSession = mongoose.models.SharedSession || mongoose.model("SharedSession", SharedSessionSchema);
+export const PublicSessionShare = mongoose.models.PublicSessionShare || mongoose.model("PublicSessionShare", PublicSessionShareSchema);
+export const StudyRecord = mongoose.models.StudyRecord || mongoose.model("StudyRecord", StudyRecordSchema);
+export const Keyword = mongoose.models.Keyword || mongoose.model("Keyword", KeywordSchema);
 
 export const entityModels = {
   User,
   Session,
   Workspace,
   CreditLedger,
-  PlanSubscription
+  PlanSubscription,
+  WorkspaceMember,
+  SharedSession,
+  PublicSessionShare,
+  StudyRecord,
+  Keyword
 };

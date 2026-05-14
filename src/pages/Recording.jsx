@@ -521,7 +521,7 @@ export default function Recording() {
           ...sessionContext,
         });
 
-        appClient.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
+        // appClient.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${mainSessionIdRef.current}`);
       } else {
@@ -846,7 +846,7 @@ export default function Recording() {
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
 
-    const useWhisperOnly = mode === AUDIO_MODES.INTERNAL || mode === AUDIO_MODES.SCREEN_AUDIO || mode === AUDIO_MODES.INTERNAL_MIC;
+    const useWhisperOnly = false; // Forced to use browser SpeechRecognition
     const BrowserWindow = /** @type {any} */ (window);
     const SpeechRecognition = !useWhisperOnly ? (BrowserWindow.SpeechRecognition || BrowserWindow.webkitSpeechRecognition) : null;
     if (SpeechRecognition) {
@@ -1002,7 +1002,7 @@ export default function Recording() {
         title,
         audio_file_url: file_url,
         ...transcriptPayload,
-        processing_status: "pending",
+        processing_status: "done",
         manual_notes: serializeNotes(quickNotesRef.current),
         source: "audio_upload",
         duration: Math.max(1, Math.ceil((file?.size || 0) / 16000)), // rough fallback seconds
@@ -1126,7 +1126,7 @@ export default function Recording() {
         title,
         video_url: url,
         ...transcriptPayload,
-        processing_status: "pending",
+        processing_status: "done",
         manual_notes: serializeNotes(quickNotesRef.current),
         source: "video_url",
         billing_source: "video_url",
@@ -1175,7 +1175,7 @@ export default function Recording() {
         user_email: user.email,
         title,
         ...transcriptPayload,
-        processing_status: "pending",
+        processing_status: "done",
         manual_notes: serializeNotes(quickNotesRef.current),
         source: "text",
         duration: estimatedMinutes * 60,
@@ -1228,7 +1228,7 @@ export default function Recording() {
         user_email: user.email,
         title,
         ...transcriptPayload,
-        processing_status: "pending",
+        processing_status: "done",
         manual_notes: serializeNotes(quickNotesRef.current),
         source: "images",
         image_urls: [file_url],
@@ -1593,5 +1593,7 @@ export default function Recording() {
         </div>
       </div>
     </div>
+  );
+}v>
   );
 }
