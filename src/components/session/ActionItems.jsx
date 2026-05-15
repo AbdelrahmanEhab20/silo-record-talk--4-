@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { CheckSquare, Square, Calendar, User, Flag, ListChecks, Plus, X, Building2, Users, Pencil, Check, ScanSearch, Loader2, CalendarPlus } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import AddToCalendarModal from "@/components/calendar/AddToCalendarModal";
+import { FEATURES } from "@/utils/featureFlags";
 
 const PRIORITY_STYLES = {
   High: "text-red-400 bg-red-500/10 border-red-500/20",
@@ -344,6 +345,7 @@ If nothing new found, return an empty array [].`,
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    {FEATURES.calendarIntegrations && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setCalModal({ item, sessionTitle }); }}
                       title="Add to Google Calendar"
@@ -351,6 +353,7 @@ If nothing new found, return an empty array [].`,
                     >
                       <CalendarPlus className="w-3.5 h-3.5" />
                     </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingId(item.id); setShowAddForm(false); }}
                       className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isDark ? "text-white/25 hover:text-white/70 hover:bg-white/8" : "text-gray-300 hover:text-gray-600 hover:bg-gray-100"}`}

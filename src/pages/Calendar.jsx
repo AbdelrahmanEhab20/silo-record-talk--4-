@@ -8,8 +8,10 @@ import { AnimatePresence } from "framer-motion";
 import GoogleCalendarConnect from "@/components/calendar/GoogleCalendarConnect";
 import CalendarEventCard from "@/components/calendar/CalendarEventCard";
 import AddToCalendarModal from "@/components/calendar/AddToCalendarModal";
+import { FEATURES } from "@/utils/featureFlags";
 
 const CONNECTOR_ID = "69f36381360cadf794b1d9be";
+const calendarSyncEnabled = FEATURES.calendarIntegrations;
 
 export default function Calendar() {
   const { isDark } = useTheme();
@@ -42,11 +44,17 @@ export default function Calendar() {
 
   // ── Google Calendar fetch ──────────────────────────────────────
   const fetchGcEvents = useCallback(async () => {
+    if (!calendarSyncEnabled) {
+      setConnected(false);
+      setGcEvents([]);
+      return;
+    }
     setGcLoading(true);
     try {
-      const res = await appClient.functions.invoke('googleCalendarUser', { action: 'list' });
-      setGcEvents(res.data?.events || []);
-      setConnected(true);
+      const res = await appClient.functions.invoke("googleCalendarUser", { action: "list" });
+      const isConnected = res.data?.connected === true;
+      setGcEvents(isConnected ? res.data?.events || [] : []);
+      setConnected(isConnected);
     } catch {
       setConnected(false);
       setGcEvents([]);
@@ -60,11 +68,16 @@ export default function Calendar() {
       if (authed) {
         const me = await appClient.auth.me();
         setUser(me);
-        await fetchGcEvents();
+        if (calendarSyncEnabled) {
+          await fetchGcEvents();
+        } else {
+          setConnected(false);
+          setGcEvents([]);
+        }
       }
       setConnLoading(false);
     });
-  }, []);
+  }, [fetchGcEvents]);
 
   // ── Connect handler (Rule 3 — popup poll) ─────────────────────
   const handleConnect = async () => {

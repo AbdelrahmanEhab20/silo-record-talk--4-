@@ -138,8 +138,12 @@ export const functionHandlers = {
 
   async googleCalendarUser(payload) {
     const action = String(payload?.action || "list");
-    if (action === "list") return ok({ events: [] });
-    if (action === "create") return ok({ event_id: "", status: "not_connected" });
-    return ok({ events: [] });
+    if (action === "list") {
+      return ok({ connected: false, events: [], error: "not_connected" });
+    }
+    if (action === "create") {
+      return ok({ connected: false, event_id: "", status: "not_connected", error: "not_connected" });
+    }
+    return ok({ connected: false, events: [], error: "not_connected" });
   }
 };
