@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import LLMProvidersSection from "@/components/admin/LLMProvidersSection";
-import FreePlanSettings from "@/components/admin/FreePlanSettings";
-import ProPlanSettings from "@/components/admin/ProPlanSettings";
+import OrgUsageSettings from "@/components/admin/OrgUsageSettings";
 import FeatureAISection from "@/components/admin/FeatureAISection";
 import {
-  Shield, Cpu, ChevronDown, ChevronUp, Save, Users, Star
+  Shield, Cpu, ChevronDown, ChevronUp, Save, Users
 } from "lucide-react";
 
 const SETTING_KEY = "global";
@@ -22,14 +21,12 @@ const DEFAULT_SETTINGS = {
   audio_upload_processing: { primary: "builtin", fallback: null },
   image_processing: { primary: "builtin", fallback: null },
   text_processing: { primary: "builtin", fallback: null },
-  free_plan_limits: {},
-  pro_plan_limits: {},
+  org_usage_limits: {},
 };
 
 const TABS = [
   { key: "ai", label: "AI Models", icon: Cpu },
-  { key: "free", label: "Free Plan", icon: Users },
-  { key: "pro", label: "Pro Plan", icon: Star },
+  { key: "usage", label: "Usage & Limits", icon: Users },
 ];
 
 export default function AdminSettings() {
@@ -116,7 +113,7 @@ export default function AdminSettings() {
           </div>
           <div>
             <h1 className={`text-2xl font-bold ${textMain}`}>AI & Platform Settings</h1>
-            <p className={`text-xs ${textSub}`}>Admin only — configure AI models and plan limits</p>
+            <p className={`text-xs ${textSub}`}>Admin only — configure AI models and org usage limits</p>
           </div>
         </div>
 
@@ -214,26 +211,11 @@ export default function AdminSettings() {
           </div>
         )}
 
-        {/* Free Plan Tab */}
-        {activeTab === "free" && (
+        {activeTab === "usage" && (
           <div className={`rounded-2xl border p-5 ${card}`}>
-            <FreePlanSettings
-              value={settings?.free_plan_limits || {}}
-              onChange={(val) => setSettings(prev => ({ ...prev, free_plan_limits: val }))}
-              providers={providers}
-              isDark={isDark}
-              textMain={textMain}
-              textSub={textSub}
-            />
-          </div>
-        )}
-
-        {/* Pro Plan Tab */}
-        {activeTab === "pro" && (
-          <div className={`rounded-2xl border p-5 ${card}`}>
-            <ProPlanSettings
-              value={settings?.pro_plan_limits || {}}
-              onChange={(val) => setSettings(prev => ({ ...prev, pro_plan_limits: val }))}
+            <OrgUsageSettings
+              value={settings?.org_usage_limits || {}}
+              onChange={(val) => setSettings((prev) => ({ ...prev, org_usage_limits: val }))}
               providers={providers}
               isDark={isDark}
               textMain={textMain}

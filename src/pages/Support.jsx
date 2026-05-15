@@ -14,8 +14,8 @@ const FAQS = [
     a: "Silo supports English and Arabic, including multiple Arabic dialects. Language is auto-detected during transcription."
   },
   {
-    q: "How many minutes do I get on the free plan?",
-    a: "Free users get 30 minutes per day. You can earn extra minutes by watching ads. Pro users get 1,800 minutes per month."
+    q: "How is usage tracked?",
+    a: "Recording minutes are tracked per user account for your organization. View your usage in Settings. Your administrator can set limits when the org admin dashboard is enabled."
   },
   {
     q: "Can I upload an existing audio or video file?",
@@ -26,8 +26,8 @@ const FAQS = [
     a: "Open any session and tap the Share button. You can create a public share link or share it to a workspace."
   },
   {
-    q: "How do I cancel my Pro subscription?",
-    a: "Go to Settings → Subscription and tap 'Manage Subscription'. You can cancel anytime and your access continues until the end of the billing period."
+    q: "How do I get more recording minutes?",
+    a: "Contact your organization administrator. This deployment does not use consumer subscriptions or Stripe billing."
   },
   {
     q: "Is my data private and secure?",

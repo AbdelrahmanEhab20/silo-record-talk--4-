@@ -12,12 +12,14 @@ import { shouldShowAds } from '@/utils/planConfig';
  * Pass `variant="post-session"` for the post-session variant.
  */
 export default function AdBanner({ subscription, onMinutesUnlocked, variant = 'banner' }) {
+  if (!shouldShowAds(subscription)) return null;
+
   const { isDark } = useTheme();
   const [visible, setVisible] = useState(true);
   const [watching, setWatching] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
 
-  if (!visible || !shouldShowAds(subscription)) return null;
+  if (!visible) return null;
 
   const handleWatch = async () => {
     setWatching(true);

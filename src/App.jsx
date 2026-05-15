@@ -25,6 +25,7 @@ import Recording from "./pages/Recording";
 import Landing from "./pages/Landing";
 import Workspaces from "./pages/Workspaces";
 import Pricing from "./pages/Pricing";
+import Usage from "./pages/Usage";
 import ProductivityDashboard from "./pages/ProductivityDashboard";
 import SEO from "./pages/SEO";
 import ContactUs from "./pages/ContactUs";
@@ -226,12 +227,13 @@ const AuthenticatedApp = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/Pricing" element={<Navigate to="/Usage" replace />} />
       <Route
-        path="/Pricing"
+        path="/Usage"
         element={
           <ProtectedRoute>
-            <LayoutWrapper currentPageName="Pricing">
-              <Pricing />
+            <LayoutWrapper currentPageName="Usage">
+              <Usage />
             </LayoutWrapper>
           </ProtectedRoute>
         }

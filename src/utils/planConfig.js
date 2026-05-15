@@ -1,99 +1,77 @@
 /**
- * SILO Pricing Configuration
- * Minutes-based freemium model
+ * Standalone / enterprise deployment — usage tracking only (no Stripe, no consumer tiers).
+ * Org admins will manage limits and users via a future admin dashboard.
  */
 
-export const PLAN_CONFIG = {
-  free: {
-    id: 'free',
-    name: 'Free',
-    priceMonthly: 0,
-    priceYearly: 0,
-    dailyMinutes: 30,
-    monthlyMinutes: null,
-    adsDefault: true,
-    adBonusMinutesPerAd: 10,
-    features: [
-      '30 minutes per day',
-      'Unlock +10 min per ad watched',
-      'Basic transcription',
-      'Summary & tags',
-    ],
-    cta: 'Get Started',
-    tagline: 'Start for free with daily usage',
-  },
-  pro: {
-    id: 'pro',
-    name: 'Pro',
-    priceMonthly: 6.40,
-    priceYearly: 76.70,
-    priceYearlyMonthly: 6.40, // per month billed yearly
-    dailyMinutes: null,
-    monthlyMinutes: 1800,
-    adsDefault: false,
-    adBonusMinutesPerAd: 0,
-    badge: 'Most Popular',
-    features: [
-      '30 hours per month (1,800 min)',
-      'No ads, ever',
-      'Advanced AI summaries',
-      'Action items & insights',
-      'Full export options',
-      'Priority processing',
-      'Full history access',
-    ],
-    cta: 'Upgrade to Pro',
-    tagline: 'Your AI Second Brain',
-  },
-  enterprise: {
-    id: 'enterprise',
-    name: 'Enterprise',
-    priceMonthly: null,
-    monthlyMinutes: null,
-    features: [
-      'White label (branding, domain, UI)',
-      'On-premise & private cloud deployment',
-      'Data sovereignty compliance',
-      'Advanced security (SSO, access control)',
-      'Custom AI models & prompts',
-      'Full integrations suite',
-      'Dedicated support & SLA',
-    ],
-    cta: 'Contact Us',
-    ctaDemo: 'Request Demo',
-    tagline: 'Built for organizations and secure environments',
-  },
+export const DEPLOYMENT_MODE = "standalone";
+
+/** Default reporting window; org-level caps can be added in admin later. */
+export const USAGE_CONFIG = {
+  trackingPeriod: "monthly",
+  /** Soft display cap until org limits are configured in admin (null = no bar cap). */
+  displayMonthlyCap: null,
 };
 
-export function getDailyLimit(subscription) {
-  if (!subscription || subscription.plan_type === 'free') {
-    const base = PLAN_CONFIG.free.dailyMinutes;
-    const bonus = subscription?.daily_bonus_minutes || 0;
-    return base + bonus;
-  }
-  if (subscription.plan_type === 'pro') return null; // no daily limit
-  return PLAN_CONFIG.free.dailyMinutes;
+/**
+ * Minutes used in the current tracking period (prefers monthly, falls back to legacy daily).
+ */
+export function getMinutesUsed(subscription) {
+  if (!subscription) return 0;
+  return (
+    subscription.monthly_minutes_used ??
+    subscription.minutes_used ??
+    subscription.daily_minutes_used ??
+    0
+  );
 }
 
-export function getMonthlyLimit(subscription) {
-  if (subscription?.plan_type === 'pro') return PLAN_CONFIG.pro.monthlyMinutes;
-  return null;
+export function getUsagePeriodLabel() {
+  return USAGE_CONFIG.trackingPeriod === "monthly" ? "This month" : "Today";
+}
+
+export function getDisplayCap(subscription) {
+  const orgCap =
+    subscription?.org_monthly_minutes_cap ??
+    subscription?.monthly_minutes_cap ??
+    USAGE_CONFIG.displayMonthlyCap;
+  return orgCap > 0 ? orgCap : null;
 }
 
 export function getRemainingMinutes(subscription) {
-  if (!subscription) return PLAN_CONFIG.free.dailyMinutes;
-  if (subscription.plan_type === 'pro') {
-    return Math.max(0, PLAN_CONFIG.pro.monthlyMinutes - (subscription.monthly_minutes_used || 0));
-  }
-  const limit = getDailyLimit(subscription);
-  return Math.max(0, limit - (subscription.daily_minutes_used || 0));
+  const cap = getDisplayCap(subscription);
+  if (!cap) return null;
+  return Math.max(0, cap - getMinutesUsed(subscription));
 }
 
-export function isPro(subscription) {
-  return subscription?.plan_type === 'pro' && subscription?.subscription_status === 'active';
+export function getUsagePercent(subscription) {
+  const cap = getDisplayCap(subscription);
+  if (!cap) return 0;
+  return Math.min(100, (getMinutesUsed(subscription) / cap) * 100);
 }
 
-export function shouldShowAds(subscription) {
-  if (isPro(subscription)) return false;
-  return subscription?.ads_enabled !== false; // show by default
+/** Consumer ads — disabled in standalone deployments. */
+export function shouldShowAds() {
+  return false;
 }
+
+/** Legacy helpers — no plan gating in standalone mode. */
+export function isPro() {
+  return true;
+}
+
+export function getDailyLimit() {
+  return null;
+}
+
+export function getMonthlyLimit() {
+  return getDisplayCap(null);
+}
+
+/** @deprecated Use USAGE_CONFIG / getMinutesUsed */
+export const PLAN_CONFIG = {
+  standalone: {
+    id: "standalone",
+    name: "Organization",
+    tagline: "Usage monitored by your organization",
+  },
+};

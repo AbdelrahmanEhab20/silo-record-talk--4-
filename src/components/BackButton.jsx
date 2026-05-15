@@ -11,7 +11,7 @@ export default function BackButton({ label = "Back" }) {
   if (ROOT_PATHS.includes(pathname)) return null;
 
   const handleBack = () => {
-    if (pathname === "/Pricing") {
+    if (pathname === "/Usage" || pathname === "/Pricing") {
       window.location.href = "/Settings";
     } else {
       window.history.back();

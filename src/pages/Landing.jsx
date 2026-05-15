@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
-import { Mic, Zap, BarChart2, ArrowRight, CheckCircle, Brain, FileText, Share2, Ear, Check, Crown, Building2, Star, ChevronRight, BookOpen, Clock, Upload, Video, ImageIcon, FileCode } from "lucide-react";
-import { PLAN_CONFIG } from "@/utils/planConfig";
+import { Mic, Zap, BarChart2, ArrowRight, CheckCircle, Brain, FileText, Share2, Ear, Check, Building2, BookOpen, Clock, Upload, Video, ImageIcon, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
@@ -232,19 +230,39 @@ export default function Landing() {
           </div>
         </motion.section>
 
-        {/* Pricing Section */}
+        {/* Enterprise / standalone */}
         <motion.section
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           className="mb-16"
         >
-          <h3 className="text-2xl font-bold mb-2 text-center">Simple, Flexible Pricing</h3>
-          <p className={`text-center ${textSub} mb-6`}>Start free. Upgrade when you need more.</p>
-
-          {/* Billing Toggle */}
-          <LandingPricingCards isDark={isDark} cardBg={cardBg} textMain={textMain} textSub={textSub} onGetStarted={handleGetStarted} />
+          <h3 className="text-2xl font-bold mb-2 text-center">Built for organizations</h3>
+          <p className={`text-center ${textSub} mb-6 max-w-md mx-auto`}>
+            Deploy Silo for your government agency or company. Usage is tracked per user — no consumer billing or Stripe.
+          </p>
+          <div className={`${cardBg} border rounded-3xl p-6 space-y-4`}>
+            {[
+              "Per-user minute tracking for compliance and capacity planning",
+              "Organization admin dashboard (users & usage) — coming soon",
+              "On-premise or private cloud deployment options",
+              "Data sovereignty, SSO, and access control ready",
+            ].map((line, idx) => (
+              <div key={idx} className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                <p className={`text-[15px] leading-relaxed ${textMain}`}>{line}</p>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => (window.location.href = "/ContactUs")}
+              className="w-full py-3 rounded-2xl font-semibold text-sm border transition-all"
+              style={{ borderColor: isDark ? "#3A3A3C" : "#E8E8ED", color: isDark ? "#fff" : "#000" }}
+            >
+              Contact us for deployment
+            </button>
+          </div>
         </motion.section>
 
         {/* CTA Section */}
@@ -265,7 +283,7 @@ export default function Landing() {
               boxShadow: "0 8px 32px rgba(139, 92, 246, 0.4)"
             }}
           >
-            Get Started for Free
+            Get Started
           </button>
         </motion.section>
 
@@ -334,119 +352,3 @@ export default function Landing() {
   );
 }
 
-function LandingPricingCards({ isDark, cardBg, textMain, textSub, onGetStarted }) {
-  const navigate = useNavigate();
-  const [billing, setBilling] = useState('monthly');
-  const card = isDark ? '#1C1C1E' : '#FFFFFF';
-  const text = isDark ? '#FFFFFF' : '#000000';
-  const sub = isDark ? '#A1A1A6' : '#6E6E73';
-  const border = isDark ? '#2C2C2E' : '#E8E8ED';
-  const proMonthly = PLAN_CONFIG.pro.priceMonthly;
-  const proMonthlyIfYearly = PLAN_CONFIG.pro.priceYearlyMonthly;
-  const proYearly = PLAN_CONFIG.pro.priceYearly;
-  const displayPrice = billing === 'yearly' ? proMonthlyIfYearly : proMonthly;
-
-  return (
-    <div className="space-y-4">
-      {/* Billing Toggle */}
-      <div className="flex items-center justify-center gap-3 mb-2">
-        {['monthly', 'yearly'].map(b => (
-          <button
-            key={b}
-            onClick={() => setBilling(b)}
-            className="px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5"
-            style={{
-              backgroundColor: billing === b ? (isDark ? '#FFFFFF' : '#000000') : 'transparent',
-              color: billing === b ? (isDark ? '#000000' : '#FFFFFF') : sub,
-            }}
-          >
-            {b.charAt(0).toUpperCase() + b.slice(1)}
-            {b === 'yearly' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500 text-white font-semibold">−20%</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* Free */}
-      <div className="rounded-3xl p-6 border" style={{ backgroundColor: card, borderColor: border }}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }}>
-            <Zap className="w-5 h-5" style={{ color: '#A855F7' }} />
-          </div>
-          <div>
-            <h4 className="font-bold text-base" style={{ color: text }}>Free</h4>
-            <p className="text-xs" style={{ color: sub }}>30 minutes daily with ads</p>
-          </div>
-        </div>
-        <p className="text-3xl font-bold mb-4" style={{ color: text }}>$0 <span className="text-sm font-normal" style={{ color: sub }}>forever</span></p>
-        <ul className="space-y-2 mb-4">
-          {PLAN_CONFIG.free.features.map((f, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <Check className="w-4 h-4 flex-shrink-0" style={{ color: '#A855F7' }} />
-              <span className="text-sm" style={{ color: sub }}>{f}</span>
-            </li>
-          ))}
-        </ul>
-        <button onClick={onGetStarted} className="w-full py-3 rounded-2xl text-sm font-semibold border transition-all" style={{ borderColor: border, color: text, backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }}>Get Started Free</button>
-      </div>
-
-      {/* Pro */}
-      <div className="rounded-3xl p-6 relative overflow-hidden" style={{ background: isDark ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', boxShadow: '0 8px 40px rgba(139,92,246,0.35)' }}>
-        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse at top right, #C084FC, transparent 60%)' }} />
-        <div className="relative">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/20">
-                <Crown className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="font-bold text-base text-white">Pro</h4>
-                <p className="text-xs text-white/70">Your AI Second Brain</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/20">
-              <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
-              <span className="text-xs font-semibold text-white">Most Popular</span>
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-white mb-1">${displayPrice.toFixed(2)} <span className="text-sm font-normal text-white/70">/mo</span></p>
-          {billing === 'yearly' && <p className="text-xs text-white/60 mb-4">Billed as ${proYearly}/year · Save 20%</p>}
-          {billing !== 'yearly' && <div className="mb-4" />}
-          <ul className="space-y-2 mb-5">
-            {PLAN_CONFIG.pro.features.map((f, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <Check className="w-4 h-4 flex-shrink-0 text-white" />
-                <span className="text-sm text-white/90">{f}</span>
-              </li>
-            ))}
-          </ul>
-          <button onClick={onGetStarted} className="w-full py-3 rounded-2xl font-semibold text-sm bg-white transition-all flex items-center justify-center gap-2" style={{ color: '#7C3AED' }}>
-            Get Pro <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Enterprise */}
-      <div className="rounded-3xl p-6 border" style={{ backgroundColor: isDark ? '#1C1C1E' : '#FAFAFA', borderColor: border }}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }}>
-            <Building2 className="w-5 h-5" style={{ color: '#6B7280' }} />
-          </div>
-          <div>
-            <h4 className="font-bold text-base" style={{ color: text }}>Enterprise</h4>
-            <p className="text-xs" style={{ color: sub }}>For organizations and secure environments</p>
-          </div>
-        </div>
-        <p className="text-2xl font-bold mb-4" style={{ color: text }}>Custom Pricing</p>
-        <ul className="space-y-2 mb-5">
-          {PLAN_CONFIG.enterprise.features.map((f, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <Check className="w-4 h-4 flex-shrink-0" style={{ color: '#6B7280' }} />
-              <span className="text-sm" style={{ color: sub }}>{f}</span>
-            </li>
-          ))}
-        </ul>
-        <button onClick={() => navigate('/ContactUs')} className="block w-full py-3 rounded-2xl font-semibold text-sm text-center transition-all" style={{ backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7', color: text }}>Contact Us</button>
-      </div>
-    </div>
-  );
-}

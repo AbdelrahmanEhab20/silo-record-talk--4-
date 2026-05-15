@@ -85,7 +85,7 @@ export default function RotatingAdSlot({ size = 'banner', interval = 5000 }) {
     );
   }
   return (
-    <div className="flex items-center gap-2 w-full cursor-pointer" onClick={() => navigate('/Pricing')}>
+    <div className="flex items-center gap-2 w-full cursor-pointer" onClick={() => navigate('/Usage')}>
       {content}
     </div>
   );

@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Sun, Moon, Smartphone, LogOut, Archive, ChevronDown, 
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { createPageUrl } from "@/utils";
-import PlanOverview from "@/components/PlanOverview";
+import UsageOverview from "@/components/UsageOverview";
 import StorageUsagePanel from "@/components/storage/StorageUsagePanel";
 import AIProviderSettings from "@/components/settings/AIProviderSettings";
 import UserProfileCard from "@/components/settings/UserProfileCard";
@@ -83,9 +83,12 @@ export default function Settings() {
           <UserProfileCard />
         </section>
 
-        {/* Plan Overview Section */}
+        {/* Usage (org-tracked minutes) */}
         <section className="mb-6">
-          <PlanOverview />
+          <p className="text-xs font-semibold text-gray-400 dark:text-[#A1A1A6] uppercase tracking-wider mb-3 px-1">
+            Usage
+          </p>
+          <UsageOverview />
         </section>
 
         {/* Storage Section */}
@@ -123,25 +126,6 @@ export default function Settings() {
               </div>
             )}
           </div>
-        </section>
-
-        {/* Plans Section - Link to Pricing */}
-        <section className="mb-6">
-          <p className="text-xs font-semibold text-gray-400 dark:text-[#A1A1A6] uppercase tracking-wider mb-3 px-1">
-            Billing
-          </p>
-          <button
-            onClick={() => navigate('/Pricing')}
-            className="w-full bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 text-left hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors min-h-[60px]"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[15px] font-medium text-gray-900 dark:text-white">Manage Plans</p>
-                <p className="text-xs text-gray-400 dark:text-[#A1A1A6] mt-1">View and upgrade your plan</p>
-              </div>
-              <span className="text-gray-400 dark:text-[#A1A1A6]">→</span>
-            </div>
-          </button>
         </section>
 
         {/* AI & Speech Section */}
