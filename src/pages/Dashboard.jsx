@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, isAfter, isBefore, addDays, parseISO, isValid, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { ArrowLeft, Clock, AlertTriangle, CheckSquare, Calendar, ChevronRight, Loader2, LayoutGrid, List, ChevronDown, Folder } from "lucide-react";
 import { createPageUrl } from "@/utils";
+import { getMinutesUsed } from "@/utils/planConfig";
 import KanbanBoard from "@/components/KanbanBoard";
 import AggregateMetrics from "@/components/dashboard/AggregateMetrics";
 import AudioSourcesChart from "@/components/dashboard/AudioSourcesChart";
@@ -307,7 +308,7 @@ export default function Dashboard() {
          {(() => {
            // Use monthly_minutes_used from subscription as the authoritative consumed minutes
            // (covers recordings + uploaded audio + video URL minutes)
-           const totalMinutes = subscription?.monthly_minutes_used ?? sessions.reduce((sum, s) => sum + Math.floor((s.duration || 0) / 60), 0);
+           const totalMinutes = getMinutesUsed(subscription, sessions);
            const hours = Math.floor(totalMinutes / 60);
            const mins = totalMinutes % 60;
            const durationLabel = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;

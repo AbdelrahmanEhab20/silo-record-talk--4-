@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Loader2, TrendingUp, Target, Zap } from "lucide-react";
+import { getMinutesUsed } from "@/utils/planConfig";
 
 export default function AggregateMetrics({ sessions, subscription }) {
   const isValidDate = (d) => d instanceof Date && !Number.isNaN(d.getTime());
@@ -24,9 +25,7 @@ export default function AggregateMetrics({ sessions, subscription }) {
       // Aggregate basic metrics
       // Use monthly_minutes_used from subscription as authoritative total
       // (covers recordings + uploaded audio files + video URL minutes, regardless of deleted sessions)
-      const totalMinutes = subscription?.monthly_minutes_used != null
-        ? subscription.monthly_minutes_used
-        : sessions.reduce((sum, s) => sum + Math.floor((s.duration || 0) / 60), 0);
+      const totalMinutes = getMinutesUsed(subscription, sessions);
       const avgMeetingTime = totalMinutes / sessions.length;
 
       // Extract all tags/topics

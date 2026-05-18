@@ -9,8 +9,17 @@ import { functionHandlers } from "../services/functionHandlers.js";
 import { getPublicSettings } from "../services/deploymentSettings.js";
 import { findInviteByToken } from "../lib/findInviteByToken.js";
 import adminRoutes from "./admin.js";
+import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
 
 const router = express.Router();
+
+function syncUsageForSession(doc) {
+  const email = doc?.user_email;
+  if (!email) return;
+  getMinutesUsedForEmail(email).catch((err) => {
+    console.error("[usage] sync failed:", err.message);
+  });
+}
 
 function serializeAuthUser(doc) {
   if (!doc) return null;
@@ -237,6 +246,7 @@ router.post("/entities/:entity", requireAuth, async (req, res) => {
   const model = entityModels[req.params.entity];
   if (!model) return res.status(404).json({ error: { message: "Entity not found" } });
   const doc = await model.create(req.body);
+  if (req.params.entity === "Session") syncUsageForSession(doc);
   res.status(201).json(doc);
 });
 
@@ -252,6 +262,7 @@ router.patch("/entities/:entity/:id", requireAuth, async (req, res) => {
   const model = entityModels[req.params.entity];
   if (!model) return res.status(404).json({ error: { message: "Entity not found" } });
   const data = await model.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
+  if (req.params.entity === "Session") syncUsageForSession(data);
   res.json(data);
 });
 

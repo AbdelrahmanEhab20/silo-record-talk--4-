@@ -21,6 +21,11 @@ export const functionHandlers = {
     const userEmail = String(payload?.user_email || "");
     if (!userEmail || !minutes) return ok({ success: false });
     await User.updateOne({ email: userEmail }, { $inc: { minutes_balance: -minutes } }, { upsert: true });
+    await PlanSubscription.findOneAndUpdate(
+      { user_email: userEmail },
+      { $inc: { monthly_minutes_used: minutes } },
+      { upsert: true }
+    );
     await CreditLedger.create({ user_email: userEmail, type: "minutes", delta: -minutes, reason: "deductMinutes", session_id: payload?.session_id, charge_key: payload?.charge_key });
     return ok({ success: true });
   },

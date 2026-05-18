@@ -2,36 +2,16 @@ import express from "express";
 import { config } from "../config/index.js";
 import { loadDbUser, requireAuth, requireRole, isSystemAdminRole, normalizeRole } from "../middleware/auth.js";
 import { generateInviteToken, hashInviteToken, tokenLookup } from "../lib/inviteToken.js";
-import { Invite, PlanSubscription, Session, User } from "../models/index.js";
+import { Invite, User } from "../models/index.js";
 import { getDeploymentSettings } from "../services/deploymentSettings.js";
 import { sendInviteEmailForUser } from "../services/sendInviteEmail.js";
+import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
 
 const router = express.Router();
 
 router.use(requireAuth, loadDbUser, requireRole("org_admin", "system_admin"));
 
 const INVITE_DAYS = 7;
-
-function startOfMonth() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-async function getMinutesUsedForEmail(email) {
-  const sub = await PlanSubscription.findOne({ user_email: email }).lean();
-  if (sub?.monthly_minutes_used != null) {
-    return Number(sub.monthly_minutes_used) || 0;
-  }
-  const since = startOfMonth();
-  const sessions = await Session.find({
-    user_email: email,
-    createdAt: { $gte: since },
-    processing_status: "done",
-  })
-    .select("duration")
-    .lean();
-  return sessions.reduce((sum, s) => sum + (Number(s.duration) || 0) / 60, 0);
-}
 
 function serializeUser(doc, minutesThisMonth) {
   return {

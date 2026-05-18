@@ -12,17 +12,26 @@ export const USAGE_CONFIG = {
   displayMonthlyCap: null,
 };
 
+/** Sum minutes from completed sessions (duration stored in seconds). */
+export function getMinutesUsedFromSessions(sessions) {
+  if (!sessions?.length) return 0;
+  const minutes = sessions
+    .filter((s) => s.processing_status === "done")
+    .reduce((sum, s) => sum + (Number(s.duration) || 0) / 60, 0);
+  return Math.round(minutes * 10) / 10;
+}
+
 /**
- * Minutes used in the current tracking period (prefers monthly, falls back to legacy daily).
+ * Minutes used this period. Session totals win when subscription counter is stale/zero.
  */
-export function getMinutesUsed(subscription) {
-  if (!subscription) return 0;
-  return (
-    subscription.monthly_minutes_used ??
-    subscription.minutes_used ??
-    subscription.daily_minutes_used ??
-    0
-  );
+export function getMinutesUsed(subscription, sessions = null) {
+  const fromSessions = sessions ? getMinutesUsedFromSessions(sessions) : 0;
+  const fromSub =
+    subscription?.monthly_minutes_used ??
+    subscription?.minutes_used ??
+    subscription?.daily_minutes_used;
+  if (fromSessions > 0) return fromSessions;
+  return fromSub ?? 0;
 }
 
 export function getUsagePeriodLabel() {
