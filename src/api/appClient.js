@@ -61,9 +61,12 @@ export const appClient = {
       if (data?.token) setAuthToken(data.token);
       return data;
     },
-    logout() {
+    async logout(redirectTo = false) {
       setAuthToken(null);
-      return apiRequest("/auth/logout", { method: "POST" }).catch(() => null);
+      await apiRequest("/auth/logout", { method: "POST" }).catch(() => null);
+      if (redirectTo !== false) {
+        window.location.href = typeof redirectTo === "string" ? redirectTo : "/";
+      }
     },
     redirectToLogin(returnTo = "") {
       const next = returnTo ? `?next=${encodeURIComponent(returnTo)}` : "";

@@ -133,3 +133,48 @@ input, textarea {
     @apply bg-background text-foreground;
   }
 }
+
+/* Silo SweetAlert2 theme */
+.silo-swal-popup {
+  border-radius: 1rem !important;
+  padding: 1.5rem 1.25rem 1.25rem !important;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dark .swal2-container .silo-swal-popup {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+.silo-swal-title {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+}
+
+.silo-swal-text {
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  opacity: 0.85;
+}
+
+.silo-swal-btn {
+  border-radius: 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  padding: 0.625rem 1.25rem !important;
+  min-width: 5rem;
+}
+
+.silo-swal-btn-cancel {
+  color: #374151 !important;
+}
+
+.dark .swal2-container .silo-swal-btn-cancel {
+  color: #ffffff !important;
+}
+
+.swal2-icon {
+  border-width: 2px !important;
+  margin: 0.5rem auto 1rem !important;
+}

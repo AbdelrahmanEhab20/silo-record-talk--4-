@@ -8,6 +8,7 @@ import { format, isValid } from "date-fns";
 import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { SESSION_TYPES } from "@/lib/sessionTypes";
+import { siloConfirm, siloError } from "@/lib/siloAlert";
 
 export default function SessionCard({ session, selecting, selected, onToggleSelect, allFolders = [] }) {
   const { isDark } = useTheme();
@@ -36,14 +37,21 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
   const handleDelete = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm('Delete this session? This cannot be undone.')) return;
+    const ok = await siloConfirm({
+      title: "Delete session?",
+      text: "This cannot be undone.",
+      confirmText: "Delete",
+      icon: "warning",
+      danger: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     try {
       await appClient.entities.Session.delete(session.id);
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Failed to delete session');
+      await siloError("Delete failed", "Could not delete this session.");
     } finally {
       setDeleting(false);
     }

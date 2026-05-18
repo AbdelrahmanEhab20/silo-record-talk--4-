@@ -115,17 +115,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      appClient.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      appClient.auth.logout();
-    }
+    setAuthError(null);
+    const redirectTo = shouldRedirect ? "/" : false;
+    await appClient.auth.logout(redirectTo);
   };
 
   const navigateToLogin = () => {

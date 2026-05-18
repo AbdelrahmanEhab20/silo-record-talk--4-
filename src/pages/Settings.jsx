@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Sun, Moon, Smartphone, LogOut, Archive, ChevronDown, 
 
 import { useAuth } from "@/lib/AuthContext";
 import { useTheme } from "@/lib/ThemeContext";
+import { siloConfirmDeleteAccount, siloConfirmLogout, siloError } from "@/lib/siloAlert";
 import { createPageUrl } from "@/utils";
 import UsageOverview from "@/components/UsageOverview";
 import StorageUsagePanel from "@/components/storage/StorageUsagePanel";
@@ -20,40 +21,33 @@ const options = [
 export default function Settings() {
   const navigate = useNavigate();
   const { appearance, setAppearance } = useTheme();
-  const { navigateToLogin } = useAuth();
+  const { logout } = useAuth();
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [appearanceCollapsed, setAppearanceCollapsed] = useState(true);
   const [storageCollapsed, setStorageCollapsed] = useState(true);
 
   const handleLogout = async () => {
-    const confirmed = window.confirm("Log out from your account?");
+    const confirmed = await siloConfirmLogout();
     if (!confirmed) return;
     try {
-      await appClient.auth.logout("/");
+      await logout(true);
     } catch (error) {
       console.error("Logout error:", error);
-      // Force redirect to landing page even if logout fails
       window.location.href = "/";
     }
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      "Delete your account?\n\nAll your sessions and data will be permanently deleted. This cannot be undone."
-    );
+    const confirmed = await siloConfirmDeleteAccount();
     if (!confirmed) return;
-    const doubleConfirmed = window.confirm("Are you absolutely sure? This is irreversible.");
-    if (!doubleConfirmed) return;
     setDeletingAccount(true);
     try {
-      // Delete all user sessions
       const sessions = await appClient.entities.Session.list("-created_date", 200);
       await Promise.all(sessions.map((s) => appClient.entities.Session.delete(s.id)));
-      // Log out
-      appClient.auth.logout();
+      await logout(true);
     } catch (e) {
       setDeletingAccount(false);
-      alert("Something went wrong. Please try again.");
+      await siloError("Delete failed", "Something went wrong. Please try again.");
     }
   };
 

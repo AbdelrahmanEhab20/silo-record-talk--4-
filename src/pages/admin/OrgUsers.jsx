@@ -4,6 +4,7 @@ import { adminApi } from "@/api/adminApi";
 import { isSystemAdmin } from "@/lib/roles";
 import { useAuth } from "@/lib/AuthContext";
 import { UserPlus, Loader2 } from "lucide-react";
+import { siloConfirm, siloError } from "@/lib/siloAlert";
 
 const ROLE_OPTIONS = [
   { value: "member", label: "Member" },
@@ -70,17 +71,24 @@ export default function OrgUsers() {
       await adminApi.patchUser(id, { role });
       load();
     } catch (e) {
-      alert(e.message || "Update failed");
+      await siloError("Update failed", e.message || "Could not update user.");
     }
   };
 
   const handleStatusChange = async (id, status) => {
-    if (!window.confirm(`Set user status to ${status}?`)) return;
+    const ok = await siloConfirm({
+      title: status === "disabled" ? "Disable user?" : "Enable user?",
+      text: `This will set the account status to "${status}".`,
+      confirmText: status === "disabled" ? "Disable" : "Enable",
+      icon: status === "disabled" ? "warning" : "question",
+      danger: status === "disabled",
+    });
+    if (!ok) return;
     try {
       await adminApi.patchUser(id, { status });
       load();
     } catch (e) {
-      alert(e.message || "Update failed");
+      await siloError("Update failed", e.message || "Could not update user.");
     }
   };
 

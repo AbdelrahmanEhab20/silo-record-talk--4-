@@ -7,6 +7,7 @@ import { PlaybackProvider } from "@/lib/PlaybackContext";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Clock, Calendar, Loader2, Trash2, Pencil, Check, X, Users, FileDown, Search, Send, MoreHorizontal, Download, BrainCircuit, RefreshCw } from "lucide-react";
 import { SESSION_TYPES } from "@/lib/sessionTypes";
+import { siloAlert, siloConfirm, siloError } from "@/lib/siloAlert";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import SingleSessionAudioPlayer from "@/components/session/SingleSessionAudioPlayer";
@@ -248,7 +249,7 @@ export default function SessionDetail() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert("Export failed: " + e.message);
+      await siloError("Export failed", e.message);
     }
     setExportingDocx(false);
   };
@@ -324,14 +325,27 @@ export default function SessionDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Delete this session? This cannot be undone.")) return;
+    const ok = await siloConfirm({
+      title: "Delete session?",
+      text: "This cannot be undone.",
+      confirmText: "Delete",
+      icon: "warning",
+      danger: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     await appClient.entities.Session.delete(sessionId);
     navigate("/home");
   };
 
   const handleRetranscribe = async () => {
-    if (!window.confirm("Re-transcribe this session? This will overwrite the current transcript.")) return;
+    const ok = await siloConfirm({
+      title: "Re-transcribe session?",
+      text: "This will overwrite the current transcript.",
+      confirmText: "Re-transcribe",
+      icon: "warning",
+    });
+    if (!ok) return;
     setIsRetranscribing(true);
     try {
       if (session.video_url) {
@@ -344,7 +358,7 @@ export default function SessionDetail() {
           session_id: sessionId,
         });
       } else {
-        alert("No audio or video file to retranscribe");
+        await siloAlert({ title: "Nothing to transcribe", text: "No audio or video file is attached to this session.", icon: "info" });
         setIsRetranscribing(false);
         return;
       }
@@ -353,7 +367,7 @@ export default function SessionDetail() {
       queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
       setTranscriptText(null);
     } catch (e) {
-      alert("Retranscription failed: " + e.message);
+      await siloError("Retranscription failed", e.message);
     }
     setIsRetranscribing(false);
   };

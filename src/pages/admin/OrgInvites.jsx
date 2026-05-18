@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { adminApi } from "@/api/adminApi";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { siloConfirm } from "@/lib/siloAlert";
 
 export default function OrgInvites() {
   const { isDark } = useTheme();
@@ -46,7 +47,14 @@ export default function OrgInvites() {
   };
 
   const handleRevoke = async (id) => {
-    if (!window.confirm("Revoke this invite?")) return;
+    const ok = await siloConfirm({
+      title: "Revoke invitation?",
+      text: "The invite link will no longer work.",
+      confirmText: "Revoke",
+      icon: "warning",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await adminApi.revokeInvite(id);
       load();
