@@ -9,7 +9,84 @@ const UserSchema = new mongoose.Schema(
     password_hash: { type: String, select: false },
     plan: { type: String, default: "free" },
     minutes_balance: { type: Number, default: 0 },
-    credits_balance: { type: Number, default: 0 }
+    credits_balance: { type: Number, default: 0 },
+    role: {
+      type: String,
+      enum: ["member", "org_admin", "system_admin"],
+      default: "member",
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["invited", "active", "disabled"],
+      default: "active",
+      index: true,
+    },
+    google_id: { type: String, sparse: true, index: true },
+    apple_id: { type: String, sparse: true, index: true },
+    last_active_at: Date,
+  },
+  baseOptions
+);
+
+const DeploymentSettingsSchema = new mongoose.Schema(
+  {
+    singleton_key: { type: String, default: "default", unique: true },
+    app_name: { type: String, default: "Silo" },
+    logo_url: String,
+    favicon_url: String,
+    primary_color: { type: String, default: "#6366F1" },
+    accent_color: { type: String, default: "#A855F7" },
+    support_email: String,
+    default_locale: { type: String, default: "en" },
+    email_from_name: { type: String, default: "Silo" },
+  },
+  baseOptions
+);
+
+const InviteSchema = new mongoose.Schema(
+  {
+    email: { type: String, required: true, index: true },
+    role: {
+      type: String,
+      enum: ["member", "org_admin", "system_admin"],
+      default: "member",
+    },
+    token_hash: { type: String, required: true },
+    expires_at: { type: Date, required: true, index: true },
+    invited_by: { type: String, required: true },
+    accepted_at: Date,
+    revoked_at: Date,
+  },
+  baseOptions
+);
+
+const EmailLogSchema = new mongoose.Schema(
+  {
+    to: { type: String, required: true, index: true },
+    template: { type: String, required: true, index: true },
+    subject: String,
+    status: { type: String, enum: ["sent", "failed"], required: true },
+    provider_id: String,
+    error: String,
+    sent_at: Date,
+  },
+  baseOptions
+);
+
+const AISettingsSchema = new mongoose.Schema(
+  {
+    setting_key: { type: String, default: "global", unique: true },
+    llm_providers: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    live_transcription: { type: Object, default: {} },
+    chunk_processing: { type: Object, default: {} },
+    ai_analysis: { type: Object, default: {} },
+    full_retranscription: { type: Object, default: {} },
+    video_url_processing: { type: Object, default: {} },
+    audio_upload_processing: { type: Object, default: {} },
+    image_processing: { type: Object, default: {} },
+    text_processing: { type: Object, default: {} },
+    org_usage_limits: { type: Object, default: {} },
   },
   baseOptions
 );
@@ -137,6 +214,11 @@ const KeywordSchema = new mongoose.Schema(
 );
 
 export const User = mongoose.models.User || mongoose.model("User", UserSchema);
+export const DeploymentSettings =
+  mongoose.models.DeploymentSettings || mongoose.model("DeploymentSettings", DeploymentSettingsSchema);
+export const Invite = mongoose.models.Invite || mongoose.model("Invite", InviteSchema);
+export const AISettings = mongoose.models.AISettings || mongoose.model("AISettings", AISettingsSchema);
+export const EmailLog = mongoose.models.EmailLog || mongoose.model("EmailLog", EmailLogSchema);
 export const Session = mongoose.models.Session || mongoose.model("Session", SessionSchema);
 export const Workspace = mongoose.models.Workspace || mongoose.model("Workspace", WorkspaceSchema);
 export const CreditLedger = mongoose.models.CreditLedger || mongoose.model("CreditLedger", CreditLedgerSchema);
@@ -159,5 +241,8 @@ export const entityModels = {
   SharedSession,
   PublicSessionShare,
   StudyRecord,
-  Keyword
+  Keyword,
+  AISettings,
+  DeploymentSettings,
+  Invite,
 };

@@ -7,6 +7,7 @@ import FeatureAISection from "@/components/admin/FeatureAISection";
 import {
   Shield, Cpu, ChevronDown, ChevronUp, Save, Users
 } from "lucide-react";
+import { isSystemAdmin } from "@/lib/roles";
 
 const SETTING_KEY = "global";
 
@@ -49,7 +50,11 @@ export default function AdminSettings() {
     const init = async () => {
       try {
         const user = await appClient.auth.me();
-        if (user?.role !== "admin") { setIsAdmin(false); setLoading(false); return; }
+        if (!isSystemAdmin(user)) {
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
         setIsAdmin(true);
         const records = await appClient.entities.AISettings.filter({ setting_key: SETTING_KEY });
         if (records.length > 0) {
@@ -95,7 +100,7 @@ export default function AdminSettings() {
         <div className={`rounded-3xl border p-10 text-center max-w-sm w-full ${card}`}>
           <Shield className="w-12 h-12 mx-auto mb-4 text-red-400" />
           <h2 className={`text-xl font-bold mb-2 ${textMain}`}>Admin Access Only</h2>
-          <p className={`text-sm ${textSub}`}>This page is restricted to admin users only.</p>
+          <p className={`text-sm ${textSub}`}>This page is restricted to system administrators only.</p>
         </div>
       </div>
     );

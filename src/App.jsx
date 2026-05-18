@@ -42,6 +42,12 @@ import LearningProgress from "./pages/LearningProgress";
 import Courses from "./pages/Courses";
 import AdminSettings from "./pages/AdminSettings";
 import Login from "./pages/Login";
+import AcceptInvite from "./pages/AcceptInvite";
+import RoleRoute from "@/lib/RoleRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import OrgUsers from "./pages/admin/OrgUsers";
+import OrgUsage from "./pages/admin/OrgUsage";
+import OrgInvites from "./pages/admin/OrgInvites";
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -123,6 +129,7 @@ const AuthenticatedApp = () => {
           </PublicOnlyRoute>
         }
       />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/share/:code" element={<PublicSessionView />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
@@ -348,12 +355,32 @@ const AuthenticatedApp = () => {
       />
       <Route
         path="/AdminSettings"
+        element={<Navigate to="/admin/platform" replace />}
+      />
+      <Route
+        path="/admin/platform"
         element={
           <ProtectedRoute>
-            <AdminSettings />
+            <RoleRoute requireSystemAdmin>
+              <AdminSettings />
+            </RoleRoute>
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/org"
+        element={
+          <ProtectedRoute>
+            <RoleRoute>
+              <AdminLayout />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<OrgUsers />} />
+        <Route path="usage" element={<OrgUsage />} />
+        <Route path="invites" element={<OrgInvites />} />
+      </Route>
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

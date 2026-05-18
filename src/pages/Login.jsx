@@ -29,7 +29,12 @@ export default function Login() {
       await checkAppState();
       navigate(nextPath, { replace: true });
     } catch (err) {
-      setError(err?.message || "Login failed");
+      const code = err?.data?.error?.code;
+      if (code === "INVITE_PENDING") {
+        setError("Please open the invitation link in your email to set your password first.");
+      } else {
+        setError(err?.message || "Login failed");
+      }
     } finally {
       setLoading(false);
     }

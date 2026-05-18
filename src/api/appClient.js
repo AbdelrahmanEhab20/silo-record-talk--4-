@@ -50,6 +50,17 @@ export const appClient = {
       if (data?.token) setAuthToken(data.token);
       return data;
     },
+    async getInviteInfo(token) {
+      return apiRequest(`/auth/invite-info?token=${encodeURIComponent(token)}`);
+    },
+    async acceptInvite({ token, password, full_name }) {
+      const data = await apiRequest("/auth/accept-invite", {
+        method: "POST",
+        body: { token, password, full_name },
+      });
+      if (data?.token) setAuthToken(data.token);
+      return data;
+    },
     logout() {
       setAuthToken(null);
       return apiRequest("/auth/logout", { method: "POST" }).catch(() => null);

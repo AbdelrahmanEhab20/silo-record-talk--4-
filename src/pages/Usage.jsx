@@ -12,6 +12,7 @@ import {
   getUsagePercent,
   DEPLOYMENT_MODE,
 } from "@/utils/planConfig";
+import { isOrgAdmin } from "@/lib/roles";
 
 function formatMinutes(total) {
   const mins = Math.max(0, Math.round(total));
@@ -165,21 +166,39 @@ export default function Usage() {
               </div>
             </div>
 
-            <div
-              className="rounded-2xl p-4 border"
-              style={{
-                backgroundColor: isDark ? "rgba(168,85,247,0.08)" : "rgba(102,126,234,0.08)",
-                borderColor: isDark ? "rgba(168,85,247,0.25)" : "rgba(102,126,234,0.25)",
-              }}
-            >
-              <p className="text-sm font-medium mb-1" style={{ color: text }}>
-                Coming soon: organization admin
-              </p>
-              <p className="text-xs leading-relaxed" style={{ color: sub }}>
-                Org admins will add users, set minute allocations, and monitor usage per account
-                from a dedicated dashboard. Billing and Stripe are not used in this deployment.
-              </p>
-            </div>
+            {isOrgAdmin(user) ? (
+              <button
+                type="button"
+                onClick={() => navigate("/admin/org")}
+                className="w-full rounded-2xl p-4 border text-left transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: isDark ? "rgba(168,85,247,0.08)" : "rgba(102,126,234,0.08)",
+                  borderColor: isDark ? "rgba(168,85,247,0.25)" : "rgba(102,126,234,0.25)",
+                }}
+              >
+                <p className="text-sm font-medium mb-1" style={{ color: text }}>
+                  Organization admin
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: sub }}>
+                  Manage users, invitations, and usage across your organization.
+                </p>
+              </button>
+            ) : (
+              <div
+                className="rounded-2xl p-4 border"
+                style={{
+                  backgroundColor: isDark ? "rgba(168,85,247,0.08)" : "rgba(102,126,234,0.08)",
+                  borderColor: isDark ? "rgba(168,85,247,0.25)" : "rgba(102,126,234,0.25)",
+                }}
+              >
+                <p className="text-sm font-medium mb-1" style={{ color: text }}>
+                  Organization admin
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: sub }}>
+                  Contact your administrator if you need access to invite users or view org-wide usage.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

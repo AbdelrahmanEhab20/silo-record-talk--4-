@@ -3,11 +3,30 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import { config } from "../config/index.js";
-import { requireAuth } from "../middleware/auth.js";
+import { normalizeRole, requireAuth } from "../middleware/auth.js";
 import { entityModels, Job, User } from "../models/index.js";
 import { functionHandlers } from "../services/functionHandlers.js";
+import { getPublicSettings } from "../services/deploymentSettings.js";
+import { findInviteByToken } from "../lib/findInviteByToken.js";
+import adminRoutes from "./admin.js";
 
 const router = express.Router();
+
+function serializeAuthUser(doc) {
+  if (!doc) return null;
+  return {
+    id: String(doc._id),
+    email: doc.email,
+    full_name: doc.full_name || "",
+    plan: doc.plan || "free",
+    role: normalizeRole(doc.role),
+    status: doc.status || "active",
+    minutes_balance: doc.minutes_balance ?? 0,
+    credits_balance: doc.credits_balance ?? 0,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
 const upload = multer();
 
 router.get("/health", (_req, res) => {
@@ -45,14 +64,107 @@ router.post("/auth/login", async (req, res) => {
     return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } });
   }
 
+  if (user.status === "disabled") {
+    return res.status(403).json({ error: { code: "ACCOUNT_DISABLED", message: "Account is disabled" } });
+  }
+  if (user.status === "invited") {
+    return res.status(403).json({
+      error: {
+        code: "INVITE_PENDING",
+        message: "Please accept your invitation before signing in",
+      },
+    });
+  }
+
+  await User.updateOne({ email: user.email }, { $set: { last_active_at: new Date() } });
+
   const token = jwt.sign({ email: user.email }, config.jwtSecret, { expiresIn: "7d" });
   return res.json({
     token,
-    user: {
-      email: user.email,
-      full_name: user.full_name || "",
-      plan: user.plan || "free"
-    }
+    user: serializeAuthUser(user),
+  });
+});
+
+router.post("/auth/register", (_req, res) => {
+  return res.status(403).json({
+    error: {
+      code: "REGISTRATION_DISABLED",
+      message: "Public registration is disabled. Contact your administrator for an invitation.",
+    },
+  });
+});
+
+router.get("/auth/invite-info", async (req, res) => {
+  const token = String(req.query?.token || "");
+  if (!token) {
+    return res.status(400).json({ error: { message: "token is required" } });
+  }
+  const invite = await findInviteByToken(token);
+  if (!invite) {
+    return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
+  }
+  const public_settings = await getPublicSettings();
+  res.json({
+    email: invite.email,
+    role: invite.role,
+    expires_at: invite.expires_at,
+    public_settings,
+  });
+});
+
+router.post("/auth/accept-invite", async (req, res) => {
+  const token = String(req.body?.token || "");
+  const password = String(req.body?.password || "");
+  const fullName = String(req.body?.full_name || "").trim();
+
+  if (!token || !password) {
+    return res.status(400).json({ error: { message: "token and password are required" } });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: { message: "Password must be at least 8 characters" } });
+  }
+
+  const invite = await findInviteByToken(token);
+  if (!invite) {
+    return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const setFields = {
+    email: invite.email,
+    password_hash: passwordHash,
+    role: invite.role,
+    status: "active",
+    last_active_at: new Date(),
+  };
+  if (fullName) setFields.full_name = fullName;
+
+  const user = await User.findOneAndUpdate(
+    { email: invite.email },
+    {
+      $set: setFields,
+      $setOnInsert: {
+        plan: "free",
+        minutes_balance: 0,
+        credits_balance: 0,
+      },
+    },
+    { upsert: true, returnDocument: "after" }
+  ).lean();
+
+  await Invite.updateOne(
+    { _id: invite._id },
+    { $set: { accepted_at: new Date() } }
+  );
+  await Invite.updateMany(
+    { email: invite.email, accepted_at: null, _id: { $ne: invite._id } },
+    { $set: { revoked_at: new Date() } }
+  );
+
+  const jwtToken = jwt.sign({ email: user.email }, config.jwtSecret, { expiresIn: "7d" });
+  return res.json({
+    token: jwtToken,
+    user: serializeAuthUser(user),
   });
 });
 
@@ -64,29 +176,28 @@ router.get("/auth/me", requireAuth, async (req, res) => {
       email,
       full_name: "",
       plan: "free",
+      role: "member",
+      status: "active",
       minutes_balance: 0,
       credits_balance: 0,
     });
   }
-  res.json({
-    id: String(doc._id),
-    email: doc.email,
-    full_name: doc.full_name || "",
-    plan: doc.plan || "free",
-    minutes_balance: doc.minutes_balance ?? 0,
-    credits_balance: doc.credits_balance ?? 0,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-  });
+  if (doc.status === "disabled") {
+    return res.status(403).json({ error: { code: "ACCOUNT_DISABLED", message: "Account is disabled" } });
+  }
+  res.json(serializeAuthUser(doc));
 });
 
 router.post("/auth/logout", (_req, res) => {
   res.json({ success: true });
 });
 
-router.get("/app/public-settings", (_req, res) => {
-  res.json({ id: "silo", public_settings: { app_name: "Silo" } });
+router.get("/app/public-settings", async (_req, res) => {
+  const public_settings = await getPublicSettings();
+  res.json({ id: "silo", public_settings });
 });
+
+router.use("/admin", adminRoutes);
 
 router.get("/entities/:entity", requireAuth, async (req, res) => {
   const model = entityModels[req.params.entity];
