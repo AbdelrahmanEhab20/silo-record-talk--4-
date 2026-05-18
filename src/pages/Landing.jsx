@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
-import { Mic, Zap, BarChart2, ArrowRight, CheckCircle, Brain, FileText, Share2, Ear, Check, Building2, BookOpen, Clock, Upload, Video, ImageIcon, FileCode } from "lucide-react";
+import { Mic, Zap, BarChart2, ArrowRight, CheckCircle, Brain, FileText, Share2, Ear, Check, Building2, BookOpen, Clock, Upload, Video, ImageIcon, FileCode, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
