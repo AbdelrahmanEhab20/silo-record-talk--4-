@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTheme } from "@/lib/ThemeContext";
-import { ChevronLeft, Users, BarChart3, Settings, Shield } from "lucide-react";
+import { ChevronLeft, Users, BarChart3, Settings, Shield, LayoutDashboard, UserPlus } from "lucide-react";
 import { isSystemAdmin } from "@/lib/roles";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -39,8 +39,12 @@ export default function AdminLayout() {
             <ChevronLeft className={`w-5 h-5 ${text}`} />
           </button>
           <div className="flex-1">
-            <h1 className={`text-lg font-semibold ${text}`}>Organization admin</h1>
-            <p className={`text-xs ${sub}`}>{user?.email}</p>
+            <h1 className={`text-lg font-semibold ${text}`}>
+              {isSystemAdmin(user) ? "Administration" : "Organization admin"}
+            </h1>
+            <p className={`text-xs ${sub}`}>
+              Users · roles · invitations · usage
+            </p>
           </div>
           {isSystemAdmin(user) && (
             <Link
@@ -57,8 +61,12 @@ export default function AdminLayout() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         <nav className={`flex flex-wrap gap-2 p-2 rounded-2xl border mb-6 ${card}`}>
           <NavLink to="/admin/org" end className={(p) => navLinkClass(p, isDark)}>
+            <LayoutDashboard className="w-4 h-4" />
+            Overview
+          </NavLink>
+          <NavLink to="/admin/org/users" className={(p) => navLinkClass(p, isDark)}>
             <Users className="w-4 h-4" />
-            Users
+            Users & invite
           </NavLink>
           <NavLink to="/admin/org/usage" className={(p) => navLinkClass(p, isDark)}>
             <BarChart3 className="w-4 h-4" />

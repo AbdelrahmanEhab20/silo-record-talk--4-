@@ -1,7 +1,7 @@
 import express from "express";
 import { config } from "../config/index.js";
 import { loadDbUser, requireAuth, requireRole, isSystemAdminRole, normalizeRole } from "../middleware/auth.js";
-import { generateInviteToken, hashInviteToken } from "../lib/inviteToken.js";
+import { generateInviteToken, hashInviteToken, tokenLookup } from "../lib/inviteToken.js";
 import { Invite, PlanSubscription, Session, User } from "../models/index.js";
 import { getDeploymentSettings } from "../services/deploymentSettings.js";
 import { sendInviteEmailForUser } from "../services/sendInviteEmail.js";
@@ -123,6 +123,7 @@ router.post("/users/invite", async (req, res) => {
     email,
     role,
     token_hash: tokenHash,
+    token_lookup: tokenLookup(token),
     expires_at: expiresAt,
     invited_by: req.dbUser.email,
   });
@@ -254,6 +255,7 @@ router.post("/invites/:id/resend", async (req, res) => {
     email: inv.email,
     role: inv.role,
     token_hash: tokenHash,
+    token_lookup: tokenLookup(token),
     expires_at: expiresAt,
     invited_by: req.dbUser.email,
   });

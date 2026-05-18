@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import multer from "multer";
 import { config } from "../config/index.js";
 import { normalizeRole, requireAuth } from "../middleware/auth.js";
-import { entityModels, Job, User } from "../models/index.js";
+import { entityModels, Invite, Job, User } from "../models/index.js";
 import { functionHandlers } from "../services/functionHandlers.js";
 import { getPublicSettings } from "../services/deploymentSettings.js";
 import { findInviteByToken } from "../lib/findInviteByToken.js";
@@ -94,78 +94,104 @@ router.post("/auth/register", (_req, res) => {
   });
 });
 
-router.get("/auth/invite-info", async (req, res) => {
-  const token = String(req.query?.token || "");
-  if (!token) {
-    return res.status(400).json({ error: { message: "token is required" } });
+router.get("/auth/invite-info", async (req, res, next) => {
+  try {
+    const token = String(req.query?.token || "");
+    if (!token) {
+      return res.status(400).json({ error: { message: "token is required" } });
+    }
+    const invite = await findInviteByToken(token);
+    if (!invite) {
+      return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
+    }
+    const public_settings = await getPublicSettings();
+    res.json({
+      email: invite.email,
+      role: invite.role,
+      expires_at: invite.expires_at,
+      public_settings,
+    });
+  } catch (err) {
+    next(err);
   }
-  const invite = await findInviteByToken(token);
-  if (!invite) {
-    return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
-  }
-  const public_settings = await getPublicSettings();
-  res.json({
-    email: invite.email,
-    role: invite.role,
-    expires_at: invite.expires_at,
-    public_settings,
-  });
 });
 
-router.post("/auth/accept-invite", async (req, res) => {
-  const token = String(req.body?.token || "");
-  const password = String(req.body?.password || "");
-  const fullName = String(req.body?.full_name || "").trim();
+router.post("/auth/accept-invite", async (req, res, next) => {
+  try {
+    const token = String(req.body?.token || "");
+    const password = String(req.body?.password || "");
+    const fullName = String(req.body?.full_name || "").trim();
 
-  if (!token || !password) {
-    return res.status(400).json({ error: { message: "token and password are required" } });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({ error: { message: "Password must be at least 8 characters" } });
-  }
+    if (!token || !password) {
+      return res.status(400).json({ error: { message: "token and password are required" } });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: { message: "Password must be at least 8 characters" } });
+    }
 
-  const invite = await findInviteByToken(token);
-  if (!invite) {
-    return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
-  }
+    const invite = await findInviteByToken(token);
+    if (!invite) {
+      return res.status(404).json({ error: { message: "Invitation is invalid or has expired" } });
+    }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const setFields = {
-    email: invite.email,
-    password_hash: passwordHash,
-    role: invite.role,
-    status: "active",
-    last_active_at: new Date(),
-  };
-  if (fullName) setFields.full_name = fullName;
+    const existing = await User.findOne({ email: invite.email }).select("+password_hash").lean();
+    if (existing?.status === "active" && existing.password_hash) {
+      const match = await bcrypt.compare(password, existing.password_hash);
+      if (match) {
+        const jwtToken = jwt.sign({ email: existing.email }, config.jwtSecret, { expiresIn: "7d" });
+        return res.json({
+          token: jwtToken,
+          user: serializeAuthUser(existing),
+          already_active: true,
+        });
+      }
+      return res.status(409).json({
+        error: { message: "This account is already active. Sign in from the login page." },
+      });
+    }
 
-  const user = await User.findOneAndUpdate(
-    { email: invite.email },
-    {
-      $set: setFields,
-      $setOnInsert: {
-        plan: "free",
-        minutes_balance: 0,
-        credits_balance: 0,
+    const passwordHash = await bcrypt.hash(password, 10);
+    const setFields = {
+      email: invite.email,
+      password_hash: passwordHash,
+      role: invite.role,
+      status: "active",
+      last_active_at: new Date(),
+    };
+    if (fullName) setFields.full_name = fullName;
+
+    const user = await User.findOneAndUpdate(
+      { email: invite.email },
+      {
+        $set: setFields,
+        $setOnInsert: {
+          plan: "free",
+          minutes_balance: 0,
+          credits_balance: 0,
+        },
       },
-    },
-    { upsert: true, returnDocument: "after" }
-  ).lean();
+      { upsert: true, new: true, select: "-password_hash" }
+    ).lean();
 
-  await Invite.updateOne(
-    { _id: invite._id },
-    { $set: { accepted_at: new Date() } }
-  );
-  await Invite.updateMany(
-    { email: invite.email, accepted_at: null, _id: { $ne: invite._id } },
-    { $set: { revoked_at: new Date() } }
-  );
+    const jwtToken = jwt.sign({ email: user.email }, config.jwtSecret, { expiresIn: "7d" });
 
-  const jwtToken = jwt.sign({ email: user.email }, config.jwtSecret, { expiresIn: "7d" });
-  return res.json({
-    token: jwtToken,
-    user: serializeAuthUser(user),
-  });
+    // Respond immediately so slow Render links do not drop the connection before the client reads the body
+    res.status(200).json({
+      token: jwtToken,
+      user: serializeAuthUser(user),
+    });
+
+    const now = new Date();
+    Promise.all([
+      Invite.updateOne({ _id: invite._id }, { $set: { accepted_at: now } }),
+      Invite.updateMany(
+        { email: invite.email, accepted_at: null, _id: { $ne: invite._id } },
+        { $set: { revoked_at: now } }
+      ),
+    ]).catch((err) => console.error("[accept-invite] invite cleanup failed:", err.message));
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get("/auth/me", requireAuth, async (req, res) => {

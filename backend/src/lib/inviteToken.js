@@ -5,6 +5,11 @@ export function generateInviteToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+/** Fast DB lookup key (not secret — still verify with bcrypt). */
+export function tokenLookup(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
 export async function hashInviteToken(token) {
   return bcrypt.hash(token, 12);
 }

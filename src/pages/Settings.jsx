@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { appClient } from "@/api/appClient";
-import { ArrowLeft, Check, Sun, Moon, Smartphone, LogOut, Archive, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Check, Sun, Moon, Smartphone, LogOut, Archive, ChevronDown, ChevronUp, Shield } from "lucide-react";
 
 import { useAuth } from "@/lib/AuthContext";
+import { isOrgAdmin, isSystemAdmin } from "@/lib/roles";
 import { useTheme } from "@/lib/ThemeContext";
 import { siloConfirmDeleteAccount, siloConfirmLogout, siloError } from "@/lib/siloAlert";
 import { createPageUrl } from "@/utils";
@@ -21,7 +22,7 @@ const options = [
 export default function Settings() {
   const navigate = useNavigate();
   const { appearance, setAppearance } = useTheme();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [appearanceCollapsed, setAppearanceCollapsed] = useState(true);
   const [storageCollapsed, setStorageCollapsed] = useState(true);
@@ -76,6 +77,31 @@ export default function Settings() {
           </p>
           <UserProfileCard />
         </section>
+
+        {isOrgAdmin(user) && (
+          <section className="mb-6">
+            <p className="text-xs font-semibold text-gray-400 dark:text-[#A1A1A6] uppercase tracking-wider mb-3 px-1">
+              {isSystemAdmin(user) ? "Administration" : "Organization"}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/org")}
+              className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl bg-white dark:bg-[#1C1C1E] shadow-sm hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-indigo-500/15 flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4 text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-[15px] font-medium text-gray-900 dark:text-white">
+                  {isSystemAdmin(user) ? "Admin console" : "Organization admin"}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-[#A1A1A6] mt-0.5">
+                  Users, roles, invitations, and usage
+                </p>
+              </div>
+            </button>
+          </section>
+        )}
 
         {/* Usage (org-tracked minutes) */}
         <section className="mb-6">

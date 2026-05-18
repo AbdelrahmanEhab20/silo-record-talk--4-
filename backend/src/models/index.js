@@ -53,6 +53,7 @@ const InviteSchema = new mongoose.Schema(
       default: "member",
     },
     token_hash: { type: String, required: true },
+    token_lookup: { type: String, index: true },
     expires_at: { type: Date, required: true, index: true },
     invited_by: { type: String, required: true },
     accepted_at: Date,

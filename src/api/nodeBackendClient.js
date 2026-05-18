@@ -43,40 +43,54 @@ export function hasStoredAuthToken() {
  * @property {string=} method
  * @property {any=} body
  * @property {Record<string, string>=} headers
+ * @property {boolean=} skipAuth — do not send stored JWT (public auth flows)
+ * @property {number=} timeoutMs — abort after N ms (default 120s for slow Render cold starts)
  */
 
 /**
  * @param {string} path
  * @param {ApiRequestOptions=} options
  */
-export async function apiRequest(path, { method = "GET", body, headers = {} } = {}) {
+export async function apiRequest(path, { method = "GET", body, headers = {}, skipAuth = false, timeoutMs = 120000 } = {}) {
   if (!API_BASE && !isDev) {
     throw missingApiBaseError();
   }
   const requestUrl = `${API_BASE}${path}`;
   const requestHeaders = { ...headers };
   if (!(body instanceof FormData)) requestHeaders["Content-Type"] = "application/json";
-  if (token) requestHeaders.Authorization = `Bearer ${token}`;
+  const authToken = skipAuth ? null : token || readToken();
+  if (authToken) requestHeaders.Authorization = `Bearer ${authToken}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
     response = await fetch(requestUrl, {
       method,
       headers: requestHeaders,
-      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
+      credentials: "include",
+      signal: controller.signal,
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     });
   } catch (cause) {
     console.error("[api-request] Network failure", {
       url: requestUrl,
       method,
-      hasAuthToken: Boolean(token),
-      cause
+      hasAuthToken: Boolean(authToken),
+      cause,
     });
-    const err = /** @type {any} */ (new Error(`Network error while calling ${requestUrl}. Verify VITE_API_BASE_URL and backend CORS settings.`));
+    const hint =
+      cause?.name === "AbortError"
+        ? "Request timed out. The server may be waking up — wait a moment and try again."
+        : "Check your connection. If this persists, verify VITE_API_BASE_URL and Render CORS_ORIGINS include your Vercel URL.";
+    const err = /** @type {any} */ (new Error(`Network error while calling ${requestUrl}. ${hint}`));
     err.status = 0;
     err.data = null;
     err.cause = cause;
     throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const text = await response.text();

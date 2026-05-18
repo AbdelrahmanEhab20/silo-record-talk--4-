@@ -45,6 +45,7 @@ import Login from "./pages/Login";
 import AcceptInvite from "./pages/AcceptInvite";
 import RoleRoute from "@/lib/RoleRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
+import OrgOverview from "./pages/admin/OrgOverview";
 import OrgUsers from "./pages/admin/OrgUsers";
 import OrgUsage from "./pages/admin/OrgUsage";
 import OrgInvites from "./pages/admin/OrgInvites";
@@ -377,7 +378,8 @@ const AuthenticatedApp = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<OrgUsers />} />
+        <Route index element={<OrgOverview />} />
+        <Route path="users" element={<OrgUsers />} />
         <Route path="usage" element={<OrgUsage />} />
         <Route path="invites" element={<OrgInvites />} />
       </Route>

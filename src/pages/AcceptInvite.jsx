@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { appClient } from "@/api/appClient";
+import { setAuthToken } from "@/api/nodeBackendClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -30,6 +31,9 @@ export default function AcceptInvite() {
   const appName = inviteInfo?.public_settings?.app_name || "Silo";
 
   useEffect(() => {
+    // Clear any previous session so accept-invite is not sent with an old admin JWT
+    setAuthToken(null);
+
     if (!token) {
       setLoadError("Missing invitation token. Check the link in your email.");
       setLoadingInfo(false);
@@ -71,6 +75,20 @@ export default function AcceptInvite() {
       await checkAppState();
       navigate("/home", { replace: true });
     } catch (err) {
+      // Account may have been created but the browser lost the response (common on Render)
+      if (err?.status === 0 && inviteInfo?.email) {
+        try {
+          await appClient.auth.login(inviteInfo.email, password);
+          await checkAppState();
+          navigate("/home", { replace: true });
+          return;
+        } catch {
+          setSubmitError(
+            "Your account may already be active. Try signing in from the login page with the password you just set."
+          );
+          return;
+        }
+      }
       setSubmitError(err.message || "Could not accept invitation.");
     } finally {
       setSubmitting(false);

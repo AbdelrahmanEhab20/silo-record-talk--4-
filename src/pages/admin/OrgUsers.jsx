@@ -5,6 +5,9 @@ import { isSystemAdmin } from "@/lib/roles";
 import { useAuth } from "@/lib/AuthContext";
 import { UserPlus, Loader2 } from "lucide-react";
 import { siloConfirm, siloError } from "@/lib/siloAlert";
+import StatusBadge from "@/components/admin/StatusBadge";
+import RoleBadge from "@/components/admin/RoleBadge";
+import { normalizeRole } from "@/lib/roles";
 
 const ROLE_OPTIONS = [
   { value: "member", label: "Member" },
@@ -21,6 +24,7 @@ export default function OrgUsers() {
   const [inviteRole, setInviteRole] = useState("member");
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const card = isDark ? "bg-[#1C1C1E] border-white/8" : "bg-white border-gray-200";
   const text = isDark ? "text-white" : "text-gray-900";
@@ -96,6 +100,17 @@ export default function OrgUsers() {
     ? [...ROLE_OPTIONS, { value: "system_admin", label: "System admin" }]
     : ROLE_OPTIONS;
 
+  const filteredUsers = users.filter((u) => {
+    if (statusFilter === "all") return true;
+    return u.status === statusFilter;
+  });
+
+  const canEditUser = (u) => {
+    if (String(u.id) === String(currentUser?.id)) return false;
+    if (normalizeRole(u.role) === "system_admin" && !isSystemAdmin(currentUser)) return false;
+    return true;
+  };
+
   return (
     <div className="space-y-6">
       <form onSubmit={handleInvite} className={`rounded-2xl border p-5 space-y-4 ${card}`}>
@@ -138,8 +153,18 @@ export default function OrgUsers() {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className={`rounded-2xl border overflow-hidden ${card}`}>
-        <div className={`px-5 py-4 border-b ${isDark ? "border-white/8" : "border-gray-100"}`}>
-          <h2 className={`text-sm font-semibold ${text}`}>All users</h2>
+        <div className={`px-5 py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${isDark ? "border-white/8" : "border-gray-100"}`}>
+          <h2 className={`text-sm font-semibold ${text}`}>All users ({users.length})</h2>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`text-xs rounded-lg border px-2 py-1.5 ${isDark ? "bg-black/40 border-white/10 text-white" : "border-gray-200"}`}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="invited">Invited</option>
+            <option value="disabled">Disabled</option>
+          </select>
         </div>
         {loading ? (
           <div className="flex justify-center py-12">
@@ -158,33 +183,35 @@ export default function OrgUsers() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <tr key={u.id} className={isDark ? "border-t border-white/5" : "border-t border-gray-100"}>
                     <td className={`px-4 py-3 ${text}`}>
                       <div>{u.email}</div>
                       {u.full_name && <div className={`text-xs ${sub}`}>{u.full_name}</div>}
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        value={u.role}
-                        disabled={u.role === "system_admin" && !isSystemAdmin(currentUser)}
-                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className={`text-xs rounded-lg border px-2 py-1 ${isDark ? "bg-black/40 border-white/10 text-white" : "border-gray-200"}`}
-                      >
-                        {roleOptions.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                        {u.role === "system_admin" && isSystemAdmin(currentUser) && (
-                          <option value="system_admin">System admin</option>
-                        )}
-                      </select>
+                      {canEditUser(u) ? (
+                        <select
+                          value={normalizeRole(u.role)}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          className={`text-xs rounded-lg border px-2 py-1 ${isDark ? "bg-black/40 border-white/10 text-white" : "border-gray-200"}`}
+                        >
+                          {roleOptions.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <RoleBadge role={u.role} />
+                      )}
                     </td>
-                    <td className={`px-4 py-3 capitalize ${sub}`}>{u.status}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={u.status} />
+                    </td>
                     <td className={`px-4 py-3 text-right ${text}`}>{u.minutes_this_month}</td>
                     <td className="px-4 py-3 text-right">
-                      {u.status !== "disabled" && u.id !== currentUser?.id && (
+                      {canEditUser(u) && u.status !== "disabled" && (
                         <button
                           type="button"
                           onClick={() => handleStatusChange(u.id, "disabled")}
@@ -193,7 +220,7 @@ export default function OrgUsers() {
                           Disable
                         </button>
                       )}
-                      {u.status === "disabled" && (
+                      {canEditUser(u) && u.status === "disabled" && (
                         <button
                           type="button"
                           onClick={() => handleStatusChange(u.id, "active")}
@@ -207,8 +234,8 @@ export default function OrgUsers() {
                 ))}
               </tbody>
             </table>
-            {users.length === 0 && (
-              <p className={`text-center py-8 text-sm ${sub}`}>No users yet.</p>
+            {filteredUsers.length === 0 && (
+              <p className={`text-center py-8 text-sm ${sub}`}>No users match this filter.</p>
             )}
           </div>
         )}

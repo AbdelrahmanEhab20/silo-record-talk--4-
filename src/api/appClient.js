@@ -51,12 +51,13 @@ export const appClient = {
       return data;
     },
     async getInviteInfo(token) {
-      return apiRequest(`/auth/invite-info?token=${encodeURIComponent(token)}`);
+      return apiRequest(`/auth/invite-info?token=${encodeURIComponent(token)}`, { skipAuth: true });
     },
     async acceptInvite({ token, password, full_name }) {
       const data = await apiRequest("/auth/accept-invite", {
         method: "POST",
         body: { token, password, full_name },
+        skipAuth: true,
       });
       if (data?.token) setAuthToken(data.token);
       return data;

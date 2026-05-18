@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { adminApi } from "@/api/adminApi";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { siloConfirm } from "@/lib/siloAlert";
+import RoleBadge from "@/components/admin/RoleBadge";
 
 export default function OrgInvites() {
   const { isDark } = useTheme();
@@ -83,10 +84,12 @@ export default function OrgInvites() {
               <li key={inv.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className={`font-medium text-sm truncate ${text}`}>{inv.email}</p>
-                  <p className={`text-xs ${sub}`}>
-                    {inv.role} · invited by {inv.invited_by} · expires{" "}
+                  <p className={`text-xs ${sub} flex flex-wrap items-center gap-2 mt-1`}>
+                    <RoleBadge role={inv.role} />
+                    <span>invited by {inv.invited_by}</span>
+                    <span>· expires{" "}
                     {new Date(inv.expires_at).toLocaleDateString()}
-                    {inv.expired && " (expired)"}
+                    {inv.expired && " (expired)"}</span>
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
