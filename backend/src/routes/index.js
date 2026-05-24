@@ -12,6 +12,9 @@ import adminRoutes from "./admin.js";
 import { filesRouter, buildFileUrl } from "./files.js";
 import { storeAudioBuffer } from "../services/storage/gridfs.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
+import { getTranscriptionJob } from "../services/transcription/assemblyai.js";
+import { completeSessionFromAssemblyJob } from "../services/functionHandlers.js";
+import { Session } from "../models/index.js";
 
 const router = express.Router();
 
@@ -288,6 +291,24 @@ router.post("/functions/:name/invoke", requireAuth, async (req, res) => {
   } catch (err) {
     console.error(`[function:${req.params.name}] failed:`, err.message);
     return res.status(500).json({ error: { message: err.message || "Function failed" } });
+  }
+});
+
+router.post("/sessions/:id/check-transcription", requireAuth, async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id).lean();
+    if (!session) return res.status(404).json({ error: { message: "Session not found" } });
+    if (!session.assemblyai_job_id) {
+      return res.json({ status: session.processing_status, has_job: false });
+    }
+    const job = await getTranscriptionJob(session.assemblyai_job_id);
+    if (job.status === "completed" || job.status === "error") {
+      await completeSessionFromAssemblyJob(req.params.id, job);
+    }
+    res.json({ status: job.status, assemblyai_job_id: session.assemblyai_job_id });
+  } catch (err) {
+    console.error("[check-transcription] failed:", err.message);
+    res.status(500).json({ error: { message: err.message } });
   }
 });
 

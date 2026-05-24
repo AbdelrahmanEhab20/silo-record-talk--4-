@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { appClient } from "@/api/appClient";
+import { apiRequest } from "@/api/nodeBackendClient";
 import { motion } from "framer-motion";
 import { PlaybackProvider } from "@/lib/PlaybackContext";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -184,6 +185,30 @@ export default function SessionDetail() {
 
     return () => clearInterval(id);
   }, [hasSubsessions, subsessions, queryClient, sessionId]);
+
+  // Force-check AssemblyAI on the backend while session is transcribing/analyzing.
+  // Falls back gracefully if the route isn't deployed yet.
+  useEffect(() => {
+    if (!session?.id) return;
+    if (!ACTIVE_STATUSES.has(session.processing_status)) return;
+
+    let cancelled = false;
+    const check = async () => {
+      try {
+        await apiRequest(`/sessions/${session.id}/check-transcription`, { method: "POST" });
+      } catch {
+        // ignore — inline poller will catch up
+      }
+      if (!cancelled) queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+    };
+
+    check();
+    const id = setInterval(check, 6000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [session?.id, session?.processing_status, queryClient, sessionId]);
 
   // ── Transcript hydration: fetch full text when DB preview is truncated ────
   useEffect(() => {
