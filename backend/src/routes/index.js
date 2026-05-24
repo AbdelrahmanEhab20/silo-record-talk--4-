@@ -341,8 +341,24 @@ router.post(
   }
 );
 
-router.post("/integrations/core/invoke-llm", requireAuth, async (_req, res) => {
-  res.json({ text: "" });
+router.post("/integrations/core/invoke-llm", requireAuth, async (req, res) => {
+  try {
+    const { invokeLLM, isLlmAvailable } = await import("../services/llm/index.js");
+    if (!isLlmAvailable()) {
+      return res.status(503).json({ error: { message: "No LLM provider configured" } });
+    }
+    const prompt = String(req.body?.prompt || "");
+    if (!prompt.trim()) return res.status(400).json({ error: { message: "prompt is required" } });
+    const wantsJson = Boolean(req.body?.response_json_schema);
+    const result = await invokeLLM({ prompt, json: wantsJson });
+    if (wantsJson) {
+      return res.json(result ?? {});
+    }
+    return res.json(typeof result === "string" ? result : String(result ?? ""));
+  } catch (err) {
+    console.error("[invoke-llm] failed:", err.message);
+    return res.status(500).json({ error: { message: err.message || "LLM call failed" } });
+  }
 });
 
 router.post("/webhooks/stripe", async (req, res) => {
