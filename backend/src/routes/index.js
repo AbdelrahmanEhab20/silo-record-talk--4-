@@ -278,12 +278,17 @@ router.delete("/entities/:entity/:id", requireAuth, async (req, res) => {
 router.post("/functions/:name/invoke", requireAuth, async (req, res) => {
   const handler = functionHandlers[req.params.name];
   if (!handler) return res.status(404).json({ error: { message: "Function not found" } });
-  if (req.body?.async === true) {
-    const job = await Job.create({ type: req.params.name, payload: req.body });
-    return res.json({ data: { queued: true, job_id: job.id } });
+  try {
+    if (req.body?.async === true) {
+      const job = await Job.create({ type: req.params.name, payload: req.body });
+      return res.json({ data: { queued: true, job_id: job.id } });
+    }
+    const result = await handler(req.body || {});
+    return res.json(result);
+  } catch (err) {
+    console.error(`[function:${req.params.name}] failed:`, err.message);
+    return res.status(500).json({ error: { message: err.message || "Function failed" } });
   }
-  const result = await handler(req.body || {});
-  return res.json(result);
 });
 
 router.use("/files", filesRouter);

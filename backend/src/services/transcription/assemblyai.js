@@ -49,7 +49,7 @@ export async function submitTranscriptionJob({ audioUrl, language, speakerLabels
   const body = {
     audio_url: audioUrl,
     speaker_labels: speakerLabels,
-    speech_model: "universal",
+    speech_models: ["universal"],
   };
   if (language) {
     body.language_code = language;
