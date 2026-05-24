@@ -9,6 +9,8 @@ import { functionHandlers } from "../services/functionHandlers.js";
 import { getPublicSettings } from "../services/deploymentSettings.js";
 import { findInviteByToken } from "../lib/findInviteByToken.js";
 import adminRoutes from "./admin.js";
+import { filesRouter, buildFileUrl } from "./files.js";
+import { storeAudioBuffer } from "../services/storage/gridfs.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
 
 const router = express.Router();
@@ -284,10 +286,34 @@ router.post("/functions/:name/invoke", requireAuth, async (req, res) => {
   return res.json(result);
 });
 
-router.post("/integrations/core/upload-file", requireAuth, upload.single("file"), async (req, res) => {
-  const fakeUrl = req.file ? `https://files.silo.local/${Date.now()}-${req.file.originalname}` : "";
-  res.json({ file_url: fakeUrl });
-});
+router.use("/files", filesRouter);
+
+router.post(
+  "/integrations/core/upload-file",
+  requireAuth,
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: { message: "file is required" } });
+      const stored = await storeAudioBuffer({
+        buffer: req.file.buffer,
+        filename: req.file.originalname || `upload-${Date.now()}`,
+        mimeType: req.file.mimetype,
+        userEmail: req.user?.email || null,
+      });
+      const url = buildFileUrl(req, stored.file_id);
+      res.json({
+        file_url: url,
+        file_id: stored.file_id,
+        filename: stored.filename,
+        size: stored.length,
+        mime_type: req.file.mimetype,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 router.post("/integrations/core/invoke-llm", requireAuth, async (_req, res) => {
   res.json({ text: "" });

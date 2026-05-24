@@ -44,6 +44,8 @@ export const config = {
   emailReplyTo: process.env.EMAIL_REPLY_TO || "",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   assemblyAiKey: process.env.ASSEMBLYAI_API_KEY || "",
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-1.5-flash",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ""
 };

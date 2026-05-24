@@ -399,7 +399,7 @@ export default function Recording() {
 
     if (!processingTriggeredRef.current.has(session.id)) {
       processingTriggeredRef.current.add(session.id);
-      // appClient.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
+      appClient.functions.invoke('processSessionBackground', { session_id: session.id, force_transcribe: true }).catch(() => {});
     }
 
     return session;
@@ -521,7 +521,7 @@ export default function Recording() {
           ...sessionContext,
         });
 
-        // appClient.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
+        appClient.functions.invoke('processSessionBackground', { session_id: mainSessionIdRef.current, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${mainSessionIdRef.current}`);
       } else {
@@ -574,7 +574,7 @@ export default function Recording() {
           sessionId = session.id;
         }
 
-        // appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
+        appClient.functions.invoke('processSessionBackground', { session_id: sessionId, force_transcribe: true }).catch(() => {});
         setSaving(false);
         navigate(`/SessionDetail?id=${sessionId}`);
       }

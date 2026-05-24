@@ -38,27 +38,32 @@ export default function AudioUploader({ sessionId, onTranscriptReady, onAudioUpl
       const { file_url } = await appClient.integrations.Core.UploadFile({ file });
       onAudioUploaded?.(file_url);
 
-      // 3. Transcribe via Whisper backend function
       setStage("transcribing");
-      const res = await appClient.functions.invoke("transcribeAudio", { audio_url: file_url });
-      const transcript = res.data?.transcript;
-      if (!transcript) throw new Error("No transcript returned");
-
-      // 4. Save transcript + audio url + duration to session
       await appClient.entities.Session.update(sessionId, {
-        transcript_text: transcript,
         audio_file_url: file_url,
+        processing_status: "transcribing",
         ...(durationSeconds > 0 ? { duration: durationSeconds } : {}),
       });
 
-      // 5. Deduct minutes from subscription (only if duration known)
-      if (durationSeconds > 0) {
-        await appClient.functions.invoke("deductMinutes", {
-          minutes: Math.ceil(durationSeconds / 60)
+      const res = await appClient.functions.invoke("transcribeAudio", {
+        audio_url: file_url,
+        session_id: sessionId,
+      });
+
+      const inlineTranscript = res?.data?.transcript;
+      if (inlineTranscript) {
+        await appClient.entities.Session.update(sessionId, {
+          transcript_text: inlineTranscript,
         });
+        onTranscriptReady?.(inlineTranscript);
+      } else {
+        onTranscriptReady?.("");
       }
 
-      onTranscriptReady?.(transcript);
+      appClient.functions
+        .invoke("processSessionBackground", { session_id: sessionId, force_transcribe: false })
+        .catch(() => {});
+
       setStage("done");
     } catch (e) {
       setError(e.message || "Processing failed");

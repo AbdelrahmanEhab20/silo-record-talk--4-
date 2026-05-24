@@ -136,6 +136,7 @@ export default function TranscriptEditor({
 
   const [copyState, setCopyState] = useState({ structured: false, raw: false });
   const [downloadingTxt, setDownloadingTxt] = useState(false);
+  const [visibleWindowMin, setVisibleWindowMin] = useState(5);
 
   // Hydrated display transcript + loading flag
   const [displayTranscript, setDisplayTranscript] = useState("");
@@ -371,8 +372,26 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
     setMode("raw");
   };
 
-  // ── Visible segments (filtered) ───────────────────────────────────────────
-  const visibleSegments = useMemo(() => {
+  // ── Visible segments (filtered + 5-min pagination) ─────────────────────────
+  function timestampToSeconds(ts) {
+    if (!ts) return 0;
+    const parts = ts.split(":").map((n) => Number(n) || 0);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return 0;
+  }
+
+  const transcriptSpanSeconds = useMemo(() => {
+    let max = 0;
+    for (const s of segments) {
+      if (!s.timestamp) continue;
+      const sec = timestampToSeconds(s.timestamp);
+      if (sec > max) max = sec;
+    }
+    return max;
+  }, [segments]);
+
+  const filteredSegments = useMemo(() => {
     if (!search) return segments;
     const q = search.toLowerCase();
     return segments.filter(
@@ -382,6 +401,20 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
         s.timestamp.includes(q)
     );
   }, [segments, search]);
+
+  const visibleSegments = useMemo(() => {
+    if (search) return filteredSegments;
+    const cutoffSec = visibleWindowMin * 60;
+    if (transcriptSpanSeconds <= cutoffSec) return filteredSegments;
+    return filteredSegments.filter((s) => {
+      if (s.isPartHeader) return true;
+      if (!s.timestamp) return true;
+      return timestampToSeconds(s.timestamp) < cutoffSec;
+    });
+  }, [filteredSegments, search, visibleWindowMin, transcriptSpanSeconds]);
+
+  const hasMore = !search && transcriptSpanSeconds > visibleWindowMin * 60;
+  const remainingMinutes = Math.max(0, Math.ceil(transcriptSpanSeconds / 60) - visibleWindowMin);
 
   const card = isDark ? "bg-[#1C1C1E] border-white/8" : "bg-white border-gray-100";
   const textSub = isDark ? "text-white/40" : "text-gray-400";
@@ -659,6 +692,31 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
                     </div>
                   )
                 ))
+              )}
+
+              {hasMore && (
+                <div className={`px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ${isDark ? "bg-purple-500/5" : "bg-purple-50/50"}`}>
+                  <p className={`text-xs flex-1 ${textSub}`}>
+                    Showing first <strong>{visibleWindowMin} min</strong> of {Math.ceil(transcriptSpanSeconds / 60)} min total
+                    {remainingMinutes > 0 ? ` · ${remainingMinutes} min remaining` : ""}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleWindowMin((m) => m + 5)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500 text-white hover:bg-purple-600 transition-colors"
+                    >
+                      Show next 5 min
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisibleWindowMin(Math.ceil(transcriptSpanSeconds / 60) + 5)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${isDark ? "border-white/10 text-white/70 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+                    >
+                      Show all
+                    </button>
+                  </div>
+                </div>
               )}
 
               {!search && (
