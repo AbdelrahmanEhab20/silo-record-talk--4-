@@ -4,6 +4,13 @@ import { getDeploymentSettings } from "../deploymentSettings.js";
 import { renderTemplate } from "./templateRegistry.js";
 import { sendViaConsole } from "./providers/console.js";
 import { sendViaResend } from "./providers/resend.js";
+import { sendViaSendGrid } from "./providers/sendgrid.js";
+
+const ROLE_LABELS = {
+  member: "Member",
+  org_admin: "Organization admin",
+  system_admin: "System administrator",
+};
 
 function formatFromAddress() {
   const name = config.emailFromName || "Silo";
@@ -11,11 +18,42 @@ function formatFromAddress() {
   return `${name} <${addr}>`;
 }
 
-async function deliver({ to, subject, html, text }) {
+function buildSendGridDynamicData({ template, vars, branding }) {
+  if (template !== "user_invite") return null;
+  if (!config.sendGridInviteTemplateId) return null;
+
+  return {
+    templateId: config.sendGridInviteTemplateId,
+    data: {
+      appName: branding.appName,
+      inviterName: vars.inviterName || "An administrator",
+      email: vars.email,
+      role: vars.role,
+      roleLabel: ROLE_LABELS[vars.role] || vars.role || "Member",
+      inviteUrl: vars.inviteUrl,
+      expiresAt: vars.expiresAt,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+}
+
+async function deliver({ to, subject, html, text, sendGridTemplate }) {
   const provider = (config.emailProvider || "console").toLowerCase();
   const from = formatFromAddress();
   const replyTo = config.emailReplyTo || undefined;
 
+  if (provider === "sendgrid") {
+    return sendViaSendGrid({
+      to,
+      subject,
+      html,
+      text,
+      from,
+      replyTo,
+      templateId: sendGridTemplate?.templateId,
+      dynamicTemplateData: sendGridTemplate?.data,
+    });
+  }
   if (provider === "resend") {
     return sendViaResend({ to, subject, html, text, from, replyTo });
   }
@@ -48,9 +86,10 @@ export async function sendTemplate({ template, to, vars }) {
   };
 
   const { subject, html, text } = renderTemplate(template, vars, branding);
+  const sendGridTemplate = buildSendGridDynamicData({ template, vars, branding });
 
   try {
-    const result = await deliver({ to, subject, html, text });
+    const result = await deliver({ to, subject, html, text, sendGridTemplate });
     await logEmail({
       to,
       template,

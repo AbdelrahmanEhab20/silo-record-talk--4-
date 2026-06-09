@@ -39,6 +39,8 @@ export const config = {
   firstSystemAdminEmail: String(process.env.FIRST_SYSTEM_ADMIN_EMAIL || "").trim().toLowerCase(),
   emailProvider: process.env.EMAIL_PROVIDER || "console",
   resendApiKey: process.env.RESEND_API_KEY || "",
+  sendGridApiKey: process.env.SENDGRID_API_KEY || "",
+  sendGridInviteTemplateId: process.env.SENDGRID_INVITE_TEMPLATE_ID || "",
   emailFrom: process.env.EMAIL_FROM || "",
   emailFromName: process.env.EMAIL_FROM_NAME || "",
   emailReplyTo: process.env.EMAIL_REPLY_TO || "",
