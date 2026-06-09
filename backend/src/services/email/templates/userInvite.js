@@ -49,7 +49,7 @@ export function renderUserInvite(vars, branding) {
   ].join("\n");
 
   return {
-    subject: `You've been invited to ${appName}`,
+    subject: `${appName} AI — You're invited to join`,
     html,
     text,
   };

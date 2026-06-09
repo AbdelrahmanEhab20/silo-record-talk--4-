@@ -35,18 +35,22 @@ export async function sendViaSendGrid({
 
   const personalization = {
     to: [{ email: to }],
+    ...(subject ? { subject } : {}),
   };
 
   const body = {
     from: fromObj,
+    subject: subject || undefined,
     personalizations: [personalization],
   };
 
   if (templateId) {
     body.template_id = templateId;
-    personalization.dynamic_template_data = dynamicTemplateData || {};
+    personalization.dynamic_template_data = {
+      ...(dynamicTemplateData || {}),
+      ...(subject ? { subject } : {}),
+    };
   } else {
-    personalization.subject = subject;
     body.content = [];
     if (text) body.content.push({ type: "text/plain", value: text });
     if (html) body.content.push({ type: "text/html", value: html });
