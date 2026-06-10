@@ -222,6 +222,24 @@ const KeywordSchema = new mongoose.Schema(
   baseOptions
 );
 
+const GoogleIntegrationSchema = new mongoose.Schema(
+  {
+    user_email: { type: String, required: true, unique: true, index: true },
+    google_user_id: { type: String, index: true },
+    google_email: String,
+    access_token: { type: String, select: false },
+    refresh_token: { type: String, select: false },
+    token_type: String,
+    scope: String,
+    expires_at: Date,
+    connected_at: { type: Date, default: Date.now },
+    last_refreshed_at: Date,
+    last_sync_at: Date,
+    revoked_at: Date,
+  },
+  baseOptions
+);
+
 export const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export const DeploymentSettings =
   mongoose.models.DeploymentSettings || mongoose.model("DeploymentSettings", DeploymentSettingsSchema);
@@ -239,6 +257,8 @@ export const SharedSession = mongoose.models.SharedSession || mongoose.model("Sh
 export const PublicSessionShare = mongoose.models.PublicSessionShare || mongoose.model("PublicSessionShare", PublicSessionShareSchema);
 export const StudyRecord = mongoose.models.StudyRecord || mongoose.model("StudyRecord", StudyRecordSchema);
 export const Keyword = mongoose.models.Keyword || mongoose.model("Keyword", KeywordSchema);
+export const GoogleIntegration =
+  mongoose.models.GoogleIntegration || mongoose.model("GoogleIntegration", GoogleIntegrationSchema);
 
 export const entityModels = {
   User,

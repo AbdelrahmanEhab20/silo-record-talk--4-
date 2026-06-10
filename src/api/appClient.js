@@ -106,6 +106,27 @@ export const appClient = {
       }
     }
   },
+  googleCalendar: {
+    async getAuthUrl(returnTo) {
+      const qs = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : "";
+      return apiRequest(`/integrations/google/auth-url${qs}`);
+    },
+    async status() {
+      return apiRequest("/integrations/google/status");
+    },
+    async listEvents(days = 14) {
+      return apiRequest(`/integrations/google/calendar/events?days=${days}`);
+    },
+    async createEvent(event) {
+      return apiRequest("/integrations/google/calendar/events", {
+        method: "POST",
+        body: { event },
+      });
+    },
+    async disconnect() {
+      return apiRequest("/integrations/google/disconnect", { method: "POST" });
+    }
+  },
   analytics: {
     track(..._args) {
       // no-op placeholder; replace with Segment/PostHog if needed.

@@ -9,6 +9,7 @@ import { functionHandlers } from "../services/functionHandlers.js";
 import { getPublicSettings } from "../services/deploymentSettings.js";
 import { findInviteByToken } from "../lib/findInviteByToken.js";
 import adminRoutes from "./admin.js";
+import googleRoutes from "./google.js";
 import { filesRouter, buildFileUrl } from "./files.js";
 import { storeAudioBuffer } from "../services/storage/gridfs.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
@@ -282,11 +283,15 @@ router.post("/functions/:name/invoke", requireAuth, async (req, res) => {
   const handler = functionHandlers[req.params.name];
   if (!handler) return res.status(404).json({ error: { message: "Function not found" } });
   try {
+    const payload = {
+      ...(req.body || {}),
+      __userEmail: req.user?.email || null,
+    };
     if (req.body?.async === true) {
-      const job = await Job.create({ type: req.params.name, payload: req.body });
+      const job = await Job.create({ type: req.params.name, payload });
       return res.json({ data: { queued: true, job_id: job.id } });
     }
-    const result = await handler(req.body || {});
+    const result = await handler(payload);
     return res.json(result);
   } catch (err) {
     console.error(`[function:${req.params.name}] failed:`, err.message);
@@ -313,6 +318,7 @@ router.post("/sessions/:id/check-transcription", requireAuth, async (req, res) =
 });
 
 router.use("/files", filesRouter);
+router.use("/integrations/google", googleRoutes);
 
 router.post(
   "/integrations/core/upload-file",

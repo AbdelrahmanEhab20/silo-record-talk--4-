@@ -39,14 +39,22 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
       reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 30 }] },
     };
 
-    const res = await appClient.functions.invoke('googleCalendarUser', { action: 'create', event });
-    if (res.data?.error === 'not_connected') throw new Error('Google Calendar not connected');
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => {
-      onAdded?.();
-      onClose();
-    }, 1200);
+    try {
+      const res = await appClient.googleCalendar.createEvent(event);
+      if (res?.error === "not_connected") {
+        throw new Error("Google Calendar not connected");
+      }
+      setLoading(false);
+      setDone(true);
+      setTimeout(() => {
+        onAdded?.();
+        onClose();
+      }, 1200);
+    } catch (err) {
+      setLoading(false);
+      console.error("Add to calendar failed:", err);
+      alert(err.message || "Failed to add event");
+    }
   };
 
   return (

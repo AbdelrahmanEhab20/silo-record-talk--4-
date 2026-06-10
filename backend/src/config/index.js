@@ -48,6 +48,9 @@ export const config = {
   assemblyAiKey: process.env.ASSEMBLYAI_API_KEY || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ""
 };

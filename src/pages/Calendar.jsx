@@ -10,7 +10,6 @@ import CalendarEventCard from "@/components/calendar/CalendarEventCard";
 import AddToCalendarModal from "@/components/calendar/AddToCalendarModal";
 import { FEATURES } from "@/utils/featureFlags";
 
-const CONNECTOR_ID = "69f36381360cadf794b1d9be";
 const calendarSyncEnabled = FEATURES.calendarIntegrations;
 
 export default function Calendar() {
@@ -51,9 +50,9 @@ export default function Calendar() {
     }
     setGcLoading(true);
     try {
-      const res = await appClient.functions.invoke("googleCalendarUser", { action: "list" });
-      const isConnected = res.data?.connected === true;
-      setGcEvents(isConnected ? res.data?.events || [] : []);
+      const res = await appClient.googleCalendar.listEvents(14);
+      const isConnected = res?.connected === true;
+      setGcEvents(isConnected ? res.events || [] : []);
       setConnected(isConnected);
     } catch {
       setConnected(false);
@@ -79,24 +78,39 @@ export default function Calendar() {
     });
   }, [fetchGcEvents]);
 
-  // ── Connect handler (Rule 3 — popup poll) ─────────────────────
+  // ── Connect handler (popup + postMessage) ─────────────────────
   const handleConnect = async () => {
     try {
-      const url = await appClient.connectors.connectAppUser(CONNECTOR_ID);
-      const popup = window.open(url, "_blank");
+      const { url } = await appClient.googleCalendar.getAuthUrl(window.location.href);
+      if (!url) throw new Error("No auth URL returned");
+      const popup = window.open(url, "silo-google-oauth", "width=520,height=640");
+
+      const onMessage = (event) => {
+        if (event.data?.source !== "silo-google-oauth") return;
+        window.removeEventListener("message", onMessage);
+        clearInterval(timer);
+        try { popup?.close(); } catch {}
+        if (event.data.status === "success") {
+          fetchGcEvents();
+        }
+      };
+      window.addEventListener("message", onMessage);
+
       const timer = setInterval(() => {
         if (!popup || popup.closed) {
           clearInterval(timer);
+          window.removeEventListener("message", onMessage);
           fetchGcEvents();
         }
       }, 500);
-    } catch {
+    } catch (err) {
+      console.error("Google connect failed:", err);
       setConnected(false);
     }
   };
 
   const handleDisconnect = async () => {
-    await appClient.connectors.disconnectAppUser(CONNECTOR_ID);
+    try { await appClient.googleCalendar.disconnect(); } catch {}
     setConnected(false);
     setGcEvents([]);
   };
