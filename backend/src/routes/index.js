@@ -39,9 +39,45 @@ function serializeAuthUser(doc) {
     status: doc.status || "active",
     minutes_balance: doc.minutes_balance ?? 0,
     credits_balance: doc.credits_balance ?? 0,
+    profile_photo_url: doc.profile_photo_url || "",
+    bio: doc.bio || "",
+    phone: doc.phone || "",
+    location: doc.location || "",
+    job_title: doc.job_title || "",
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
+}
+
+const SELF_EDITABLE_FIELDS = [
+  "full_name",
+  "profile_photo_url",
+  "bio",
+  "phone",
+  "location",
+  "job_title",
+];
+
+function sanitizeProfileUpdate(body) {
+  const out = {};
+  if (!body || typeof body !== "object") return out;
+  for (const key of SELF_EDITABLE_FIELDS) {
+    if (body[key] === undefined) continue;
+    const raw = body[key];
+    if (raw === null) {
+      out[key] = "";
+      continue;
+    }
+    if (typeof raw !== "string") continue;
+    let value = raw.trim();
+    if (key === "bio" && value.length > 500) value = value.slice(0, 500);
+    if (key === "phone" && value.length > 32) value = value.slice(0, 32);
+    if ((key === "location" || key === "job_title") && value.length > 120) value = value.slice(0, 120);
+    if (key === "full_name" && value.length > 120) value = value.slice(0, 120);
+    if (key === "profile_photo_url" && value.length > 2048) value = value.slice(0, 2048);
+    out[key] = value;
+  }
+  return out;
 }
 const upload = multer();
 
@@ -228,6 +264,26 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     return res.status(403).json({ error: { code: "ACCOUNT_DISABLED", message: "Account is disabled" } });
   }
   res.json(serializeAuthUser(doc));
+});
+
+router.patch("/auth/me", requireAuth, async (req, res, next) => {
+  try {
+    const updates = sanitizeProfileUpdate(req.body);
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: { message: "No editable fields provided" } });
+    }
+    const doc = await User.findOneAndUpdate(
+      { email: req.user.email },
+      { $set: updates, $setOnInsert: { email: req.user.email } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).lean();
+    if (doc?.status === "disabled") {
+      return res.status(403).json({ error: { code: "ACCOUNT_DISABLED", message: "Account is disabled" } });
+    }
+    res.json(serializeAuthUser(doc));
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post("/auth/logout", (_req, res) => {

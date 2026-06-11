@@ -40,6 +40,9 @@ export const appClient = {
     async me() {
       return apiRequest("/auth/me");
     },
+    async updateMe(patch) {
+      return apiRequest("/auth/me", { method: "PATCH", body: patch });
+    },
     async devLogin(email) {
       const data = await apiRequest("/auth/dev-login", { method: "POST", body: { email } });
       if (data?.token) setAuthToken(data.token);

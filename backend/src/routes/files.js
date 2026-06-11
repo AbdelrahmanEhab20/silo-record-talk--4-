@@ -43,10 +43,19 @@ router.get("/:id", async (req, res, next) => {
     const file = await findAudioFile(req.params.id);
     if (!file) return res.status(404).json({ error: { message: "File not found" } });
 
-    res.set("Content-Type", file.contentType || "application/octet-stream");
+    const contentType = file.contentType || "application/octet-stream";
+    res.set("Content-Type", contentType);
     res.set("Content-Length", String(file.length));
     res.set("Accept-Ranges", "bytes");
-    res.set("Cache-Control", "private, max-age=3600");
+
+    // GridFS file IDs are immutable — once stored, the bytes never change.
+    // Images (avatars) benefit from aggressive caching so they don't re-fetch
+    // on every page load. Audio remains private with shorter caching.
+    if (contentType.startsWith("image/")) {
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+    } else {
+      res.set("Cache-Control", "private, max-age=3600");
+    }
 
     const stream = openAudioDownload(req.params.id);
     stream.on("error", (err) => next(err));

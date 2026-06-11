@@ -25,6 +25,12 @@ const UserSchema = new mongoose.Schema(
     google_id: { type: String, sparse: true, index: true },
     apple_id: { type: String, sparse: true, index: true },
     last_active_at: Date,
+    profile_photo_url: String,
+    profile_photo_file_id: String,
+    bio: { type: String, maxlength: 500 },
+    phone: { type: String, maxlength: 32 },
+    location: { type: String, maxlength: 120 },
+    job_title: { type: String, maxlength: 120 },
   },
   baseOptions
 );

@@ -123,6 +123,22 @@ export const AuthProvider = ({ children }) => {
     await appClient.auth.logout(redirectTo);
   };
 
+  /**
+   * Force-refresh the current user record (after a profile edit, avatar
+   * upload, etc.). Returns the fresh user object so callers can chain.
+   * Optionally accepts an already-fetched user to skip the network call.
+   */
+  const refreshUser = async (alreadyFetched) => {
+    try {
+      const next = alreadyFetched || (await appClient.auth.me());
+      setUser(next);
+      return next;
+    } catch (err) {
+      console.error("refreshUser failed:", err);
+      return null;
+    }
+  };
+
   const navigateToLogin = () => {
     appClient.auth.redirectToLogin(window.location.pathname + window.location.search);
   };
@@ -137,7 +153,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       logout,
       navigateToLogin,
-      checkAppState
+      checkAppState,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>
