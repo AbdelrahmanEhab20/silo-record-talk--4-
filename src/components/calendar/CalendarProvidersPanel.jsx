@@ -22,28 +22,72 @@ const PROVIDERS = [
   },
 ];
 
-function openOauthPopup({ url, source, onComplete }) {
+/**
+ * Open the provider's OAuth consent URL in a popup and wait for completion.
+ *
+ * Because the popup runs on Render and the parent on Vercel (cross-origin),
+ * `window.opener.postMessage` and `popup.closed` are both unreliable thanks to
+ * modern Cross-Origin-Opener-Policy. We therefore rely on three independent
+ * signals — whichever fires first wins:
+ *   1) `postMessage` from the popup (best, instant)
+ *   2) Periodically polling our own backend status endpoint
+ *   3) The parent window regaining focus (user returned to the tab)
+ */
+function openOauthPopup({ url, source, statusCheck, onComplete }) {
   const popup = window.open(url, source, "width=520,height=680");
+  let finished = false;
+
+  function finish(success) {
+    if (finished) return;
+    finished = true;
+    window.removeEventListener("message", handleMessage);
+    window.removeEventListener("focus", handleFocus);
+    clearInterval(closeTimer);
+    clearInterval(statusTimer);
+    clearTimeout(giveUpTimer);
+    try { popup?.close(); } catch {}
+    onComplete?.(success);
+  }
 
   const handleMessage = (event) => {
     if (event.data?.source !== source) return;
-    cleanup();
-    try { popup?.close(); } catch {}
-    onComplete?.(event.data.status === "success");
+    finish(event.data.status === "success");
   };
 
-  const timer = setInterval(() => {
-    if (!popup || popup.closed) {
-      cleanup();
-      onComplete?.(true);
-    }
-  }, 500);
+  const handleFocus = async () => {
+    if (finished) return;
+    if (await safelyConnected()) finish(true);
+  };
 
-  function cleanup() {
-    window.removeEventListener("message", handleMessage);
-    clearInterval(timer);
-  }
+  const safelyConnected = async () => {
+    if (typeof statusCheck !== "function") return false;
+    try {
+      const res = await statusCheck();
+      return !!res?.connected;
+    } catch {
+      return false;
+    }
+  };
+
+  // 1) postMessage listener
   window.addEventListener("message", handleMessage);
+  // 3) focus listener
+  window.addEventListener("focus", handleFocus);
+
+  // 2) backend status poll (every 2s — survives popup blockers / COOP)
+  const statusTimer = setInterval(async () => {
+    if (await safelyConnected()) finish(true);
+  }, 2000);
+
+  // popup-closed fallback (may misfire under COOP but harmless when guarded)
+  const closeTimer = setInterval(async () => {
+    let closed = false;
+    try { closed = !popup || popup.closed; } catch { closed = true; }
+    if (closed && (await safelyConnected())) finish(true);
+  }, 750);
+
+  // give up after 3 minutes
+  const giveUpTimer = setTimeout(() => finish(false), 3 * 60_000);
 }
 
 function ProviderRow({
@@ -165,6 +209,7 @@ export default function CalendarProvidersPanel({
       openOauthPopup({
         url,
         source: provider.popupSource,
+        statusCheck: () => provider.client.status(),
         onComplete: async () => {
           await onChanged?.();
           setBusyId(null);

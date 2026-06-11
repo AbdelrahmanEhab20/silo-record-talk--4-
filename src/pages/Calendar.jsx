@@ -139,6 +139,28 @@ export default function Calendar() {
     });
   }, [refreshGoogle, refreshOutlook]);
 
+  /**
+   * Safety net: when the Calendar tab regains focus (user came back from the
+   * OAuth popup or another tab), re-check both providers. This guarantees the
+   * UI updates even if the popup's postMessage was swallowed by COOP.
+   */
+  useEffect(() => {
+    if (!calendarSyncEnabled) return undefined;
+    const onFocus = () => {
+      refreshGoogle();
+      refreshOutlook();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") onFocus();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refreshGoogle, refreshOutlook]);
+
   const refreshAll = useCallback(() => {
     refreshGoogle();
     refreshOutlook();
