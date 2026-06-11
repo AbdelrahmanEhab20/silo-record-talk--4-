@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
-import { X, CalendarPlus, Loader2, Check } from "lucide-react";
+import { X, CalendarPlus, Loader2, Check, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
+
+const TARGET_STORAGE_KEY = "silo:calendar:add-target";
 
 export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdded }) {
   const { isDark } = useTheme();
@@ -12,6 +14,37 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
   const [description, setDescription] = useState(sessionTitle ? `From meeting: ${sessionTitle}` : "");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [providers, setProviders] = useState({ google: false, outlook: false, loading: true });
+  const [target, setTarget] = useState(() => {
+    try {
+      return localStorage.getItem(TARGET_STORAGE_KEY) || "google";
+    } catch {
+      return "google";
+    }
+  });
+
+  const updateTarget = (next) => {
+    setTarget(next);
+    try { localStorage.setItem(TARGET_STORAGE_KEY, next); } catch {}
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [g, o] = await Promise.all([
+          appClient.googleCalendar.status().catch(() => ({})),
+          appClient.outlookCalendar.status().catch(() => ({})),
+        ]);
+        const next = { google: !!g?.connected, outlook: !!o?.connected, loading: false };
+        setProviders(next);
+        if (target === "google" && !next.google && next.outlook) updateTarget("outlook");
+        else if (target === "outlook" && !next.outlook && next.google) updateTarget("google");
+      } catch {
+        setProviders({ google: false, outlook: false, loading: false });
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const text = isDark ? "text-white" : "text-gray-900";
   const sub = isDark ? "text-white/50" : "text-gray-500";
@@ -40,9 +73,12 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
     };
 
     try {
-      const res = await appClient.googleCalendar.createEvent(event);
+      const client = target === "outlook" ? appClient.outlookCalendar : appClient.googleCalendar;
+      const res = await client.createEvent(event);
       if (res?.error === "not_connected") {
-        throw new Error("Google Calendar not connected");
+        throw new Error(
+          target === "outlook" ? "Outlook not connected" : "Google Calendar not connected"
+        );
       }
       setLoading(false);
       setDone(true);
@@ -57,6 +93,9 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
     }
   };
 
+  const noneConnected = !providers.loading && !providers.google && !providers.outlook;
+  const bothConnected = providers.google && providers.outlook;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
       <motion.div
@@ -69,7 +108,7 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <CalendarPlus className="w-5 h-5 text-purple-400" />
-            <h3 className={`text-base font-bold ${text}`}>Add to Google Calendar</h3>
+            <h3 className={`text-base font-bold ${text}`}>Add to calendar</h3>
           </div>
           <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? "bg-white/8 text-white/50" : "bg-gray-100 text-gray-500"}`}>
             <X className="w-4 h-4" />
@@ -77,6 +116,41 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
         </div>
 
         <div className="space-y-3.5">
+          {noneConnected ? (
+            <div className={`rounded-xl border p-4 text-sm ${isDark ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+              No calendar is connected. Open Calendar → connect Google or Outlook first.
+            </div>
+          ) : bothConnected ? (
+            <div>
+              <label className={labelCls}>Add to</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "google", label: "Google", color: "#4285F4" },
+                  { id: "outlook", label: "Outlook", color: "#0078D4" },
+                ].map((opt) => {
+                  const active = target === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => updateTarget(opt.id)}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition ${
+                        active
+                          ? "text-white"
+                          : isDark
+                          ? "border-white/10 text-white/60"
+                          : "border-gray-200 text-gray-600"
+                      }`}
+                      style={active ? { background: opt.color, borderColor: opt.color } : {}}
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <div>
             <label className={labelCls}>Event Title</label>
             <input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} placeholder="Action item title" />
@@ -99,11 +173,23 @@ export default function AddToCalendarModal({ item, sessionTitle, onClose, onAdde
 
         <button
           onClick={handleSubmit}
-          disabled={!title.trim() || !date || loading || done}
+          disabled={!title.trim() || !date || loading || done || noneConnected}
           className="w-full mt-5 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-          style={{ background: done ? "linear-gradient(135deg, #22c55e, #16a34a)" : "linear-gradient(135deg, #4285F4, #34A853)" }}
+          style={{
+            background: done
+              ? "linear-gradient(135deg, #22c55e, #16a34a)"
+              : target === "outlook"
+              ? "linear-gradient(135deg, #0078D4, #106EBE)"
+              : "linear-gradient(135deg, #4285F4, #34A853)",
+          }}
         >
-          {done ? <><Check className="w-4 h-4" /> Added!</> : loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CalendarPlus className="w-4 h-4" /> Add to Calendar</>}
+          {done ? (
+            <><Check className="w-4 h-4" /> Added!</>
+          ) : loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <><CalendarPlus className="w-4 h-4" /> Add to {target === "outlook" ? "Outlook" : "Google"}</>
+          )}
         </button>
       </motion.div>
     </div>

@@ -260,6 +260,30 @@ export const Keyword = mongoose.models.Keyword || mongoose.model("Keyword", Keyw
 export const GoogleIntegration =
   mongoose.models.GoogleIntegration || mongoose.model("GoogleIntegration", GoogleIntegrationSchema);
 
+const MicrosoftIntegrationSchema = new mongoose.Schema(
+  {
+    user_email: { type: String, required: true, unique: true, index: true },
+    ms_user_id: { type: String, index: true },
+    ms_email: String,
+    ms_display_name: String,
+    tenant: String,
+    access_token: { type: String, select: false },
+    refresh_token: { type: String, select: false },
+    token_type: String,
+    scope: String,
+    expires_at: Date,
+    connected_at: { type: Date, default: Date.now },
+    last_refreshed_at: Date,
+    last_sync_at: Date,
+    revoked_at: Date,
+  },
+  baseOptions
+);
+
+export const MicrosoftIntegration =
+  mongoose.models.MicrosoftIntegration ||
+  mongoose.model("MicrosoftIntegration", MicrosoftIntegrationSchema);
+
 export const entityModels = {
   User,
   Session,

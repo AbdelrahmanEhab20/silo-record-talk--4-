@@ -3,14 +3,34 @@ import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Mic, RefreshCw, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Mic, RefreshCw, Loader2 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import GoogleCalendarConnect from "@/components/calendar/GoogleCalendarConnect";
+import CalendarProvidersPanel from "@/components/calendar/CalendarProvidersPanel";
 import CalendarEventCard from "@/components/calendar/CalendarEventCard";
 import AddToCalendarModal from "@/components/calendar/AddToCalendarModal";
 import { FEATURES } from "@/utils/featureFlags";
+import {
+  mergeDuplicateEvents,
+  filterByVisibleProviders,
+  findConflicts,
+  countConflictDays,
+} from "@/utils/calendarEvents";
+
+const VISIBILITY_STORAGE_KEY = "silo:calendar:visible-providers";
+
+function loadVisibility() {
+  try {
+    const raw = localStorage.getItem(VISIBILITY_STORAGE_KEY);
+    if (!raw) return { google: true, outlook: true };
+    const parsed = JSON.parse(raw);
+    return { google: parsed.google !== false, outlook: parsed.outlook !== false };
+  } catch {
+    return { google: true, outlook: true };
+  }
+}
 
 const calendarSyncEnabled = FEATURES.calendarIntegrations;
+const emptyProviderState = { connected: false, email: null, loading: true };
 
 export default function Calendar() {
   const { isDark } = useTheme();
@@ -18,13 +38,27 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Auth & connection state
   const [user, setUser] = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [connLoading, setConnLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const [googleState, setGoogleState] = useState(emptyProviderState);
+  const [outlookState, setOutlookState] = useState(emptyProviderState);
   const [gcEvents, setGcEvents] = useState([]);
+  const [outlookEvents, setOutlookEvents] = useState([]);
   const [gcLoading, setGcLoading] = useState(false);
-  const [addToCalModal, setAddToCalModal] = useState(null); // { item, sessionTitle }
+  const [outlookLoading, setOutlookLoading] = useState(false);
+  const [addToCalModal, setAddToCalModal] = useState(null);
+  const [visibleProviders, setVisibleProviders] = useState(loadVisibility);
+
+  const toggleProviderVisible = useCallback((provider) => {
+    setVisibleProviders((prev) => {
+      const next = { ...prev, [provider]: !prev[provider] };
+      try {
+        localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["sessions"],
@@ -41,79 +75,130 @@ export default function Calendar() {
     return grouped;
   }, [sessions]);
 
-  // ── Google Calendar fetch ──────────────────────────────────────
-  const fetchGcEvents = useCallback(async () => {
+  const refreshGoogle = useCallback(async () => {
     if (!calendarSyncEnabled) {
-      setConnected(false);
+      setGoogleState({ connected: false, email: null, loading: false });
       setGcEvents([]);
       return;
     }
     setGcLoading(true);
     try {
-      const res = await appClient.googleCalendar.listEvents(14);
-      const isConnected = res?.connected === true;
-      setGcEvents(isConnected ? res.events || [] : []);
-      setConnected(isConnected);
+      const status = await appClient.googleCalendar.status();
+      if (status?.connected) {
+        setGoogleState({ connected: true, email: status.google_email || null, loading: false });
+        const events = await appClient.googleCalendar.listEvents(14);
+        setGcEvents(events?.connected ? (events.events || []).map((e) => ({ ...e, provider: "google" })) : []);
+      } else {
+        setGoogleState({ connected: false, email: null, loading: false });
+        setGcEvents([]);
+      }
     } catch {
-      setConnected(false);
+      setGoogleState({ connected: false, email: null, loading: false });
       setGcEvents([]);
     }
     setGcLoading(false);
   }, []);
 
-  // ── Auth check + initial fetch ─────────────────────────────────
+  const refreshOutlook = useCallback(async () => {
+    if (!calendarSyncEnabled) {
+      setOutlookState({ connected: false, email: null, loading: false });
+      setOutlookEvents([]);
+      return;
+    }
+    setOutlookLoading(true);
+    try {
+      const status = await appClient.outlookCalendar.status();
+      if (status?.connected) {
+        setOutlookState({ connected: true, email: status.ms_email || null, loading: false });
+        const events = await appClient.outlookCalendar.listEvents(14);
+        setOutlookEvents(events?.connected ? (events.events || []).map((e) => ({ ...e, provider: "outlook" })) : []);
+      } else {
+        setOutlookState({ connected: false, email: null, loading: false });
+        setOutlookEvents([]);
+      }
+    } catch {
+      setOutlookState({ connected: false, email: null, loading: false });
+      setOutlookEvents([]);
+    }
+    setOutlookLoading(false);
+  }, []);
+
   useEffect(() => {
     appClient.auth.isAuthenticated().then(async (authed) => {
       if (authed) {
         const me = await appClient.auth.me();
         setUser(me);
         if (calendarSyncEnabled) {
-          await fetchGcEvents();
-        } else {
-          setConnected(false);
-          setGcEvents([]);
+          await Promise.all([refreshGoogle(), refreshOutlook()]);
         }
+      } else {
+        setGoogleState({ connected: false, email: null, loading: false });
+        setOutlookState({ connected: false, email: null, loading: false });
       }
-      setConnLoading(false);
+      setAuthChecked(true);
     });
-  }, [fetchGcEvents]);
+  }, [refreshGoogle, refreshOutlook]);
 
-  // ── Connect handler (popup + postMessage) ─────────────────────
-  const handleConnect = async () => {
-    try {
-      const { url } = await appClient.googleCalendar.getAuthUrl(window.location.href);
-      if (!url) throw new Error("No auth URL returned");
-      const popup = window.open(url, "silo-google-oauth", "width=520,height=640");
+  const refreshAll = useCallback(() => {
+    refreshGoogle();
+    refreshOutlook();
+  }, [refreshGoogle, refreshOutlook]);
 
-      const onMessage = (event) => {
-        if (event.data?.source !== "silo-google-oauth") return;
-        window.removeEventListener("message", onMessage);
-        clearInterval(timer);
-        try { popup?.close(); } catch {}
-        if (event.data.status === "success") {
-          fetchGcEvents();
-        }
-      };
-      window.addEventListener("message", onMessage);
+  const anyConnected = googleState.connected || outlookState.connected;
+  const anyLoading = gcLoading || outlookLoading;
+  const allEvents = useMemo(() => {
+    const combined = [...gcEvents, ...outlookEvents];
+    const filtered = filterByVisibleProviders(combined, visibleProviders);
+    return mergeDuplicateEvents(filtered);
+  }, [gcEvents, outlookEvents, visibleProviders]);
 
-      const timer = setInterval(() => {
-        if (!popup || popup.closed) {
-          clearInterval(timer);
-          window.removeEventListener("message", onMessage);
-          fetchGcEvents();
-        }
-      }, 500);
-    } catch (err) {
-      console.error("Google connect failed:", err);
-      setConnected(false);
+  const conflictsMap = useMemo(() => findConflicts(allEvents), [allEvents]);
+
+  const conflictDates = useMemo(() => {
+    const set = new Set();
+    allEvents.forEach((ev) => {
+      if (!conflictsMap.has(ev.id)) return;
+      const raw = ev.start?.dateTime || ev.start?.date || ev.start;
+      if (raw) set.add(new Date(raw).toLocaleDateString());
+    });
+    return set;
+  }, [allEvents, conflictsMap]);
+
+  const conflictDayCount = useMemo(
+    () => countConflictDays(conflictsMap, allEvents),
+    [conflictsMap, allEvents]
+  );
+
+  const conflictPairs = useMemo(() => {
+    if (conflictsMap.size === 0) return [];
+    const seen = new Set();
+    const pairs = [];
+    const now = Date.now();
+    const week = now + 7 * 24 * 60 * 60 * 1000;
+    for (const ev of allEvents) {
+      const raw = ev.start?.dateTime || ev.start?.date || ev.start;
+      const startMs = raw ? new Date(raw).getTime() : 0;
+      if (startMs < now || startMs > week) continue;
+      const others = conflictsMap.get(ev.id) || [];
+      others.forEach((other) => {
+        const key = [ev.id, other.id].sort().join("|");
+        if (seen.has(key)) return;
+        seen.add(key);
+        pairs.push({ a: ev, b: other });
+      });
     }
-  };
+    return pairs.slice(0, 5);
+  }, [conflictsMap, allEvents]);
 
-  const handleDisconnect = async () => {
-    try { await appClient.googleCalendar.disconnect(); } catch {}
-    setConnected(false);
-    setGcEvents([]);
-  };
+  const focusEvent = useCallback((id) => {
+    if (!id) return;
+    const el = document.getElementById(`cal-event-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-red-400/70");
+      setTimeout(() => el.classList.remove("ring-2", "ring-red-400/70"), 1600);
+    }
+  }, []);
 
   // ── Calendar grid ──────────────────────────────────────────────
   const year = currentDate.getFullYear();
@@ -132,30 +217,34 @@ export default function Calendar() {
   const selectedDateStr = selectedDate?.toLocaleDateString();
   const sessionsForSelectedDate = selectedDateStr ? sessionsByDate[selectedDateStr] : [];
 
-  // Group GC events by date for dot indicator
-  const gcEventsByDate = useMemo(() => {
+  const externalEventsByDate = useMemo(() => {
     const grouped = {};
-    gcEvents.forEach((ev) => {
-      const d = ev.start?.dateTime || ev.start?.date;
-      if (!d) return;
-      const key = new Date(d).toLocaleDateString();
+    allEvents.forEach((ev) => {
+      const raw = ev.start?.dateTime || ev.start?.date || ev.start;
+      if (!raw) return;
+      const key = new Date(raw).toLocaleDateString();
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(ev);
     });
     return grouped;
-  }, [gcEvents]);
+  }, [allEvents]);
 
-  // Upcoming events (next 7 days)
   const upcomingEvents = useMemo(() => {
     const now = Date.now();
     const week = now + 7 * 24 * 60 * 60 * 1000;
-    return gcEvents
-      .filter(ev => {
-        const t = ev.start?.dateTime ? new Date(ev.start.dateTime).getTime() : ev.start?.date ? new Date(ev.start.date).getTime() : 0;
+    return allEvents
+      .filter((ev) => {
+        const raw = ev.start?.dateTime || ev.start?.date || ev.start;
+        const t = raw ? new Date(raw).getTime() : 0;
         return t >= now && t <= week;
       })
-      .slice(0, 5);
-  }, [gcEvents]);
+      .sort((a, b) => {
+        const ta = new Date(a.start?.dateTime || a.start?.date || a.start).getTime();
+        const tb = new Date(b.start?.dateTime || b.start?.date || b.start).getTime();
+        return ta - tb;
+      })
+      .slice(0, 8);
+  }, [allEvents]);
 
   const bg = isDark ? 'bg-[#0A0A0A]' : 'bg-[#F5F5F7]';
   const cardBg = isDark ? 'bg-white/5 border-white/8' : 'bg-white border-gray-200';
@@ -172,13 +261,13 @@ export default function Calendar() {
             <h2 className="text-xl font-semibold">{monthNames[month]} {year}</h2>
           </div>
           <div className="flex gap-1 items-center">
-            {connected && (
+            {anyConnected && (
               <button
-                onClick={fetchGcEvents}
-                disabled={gcLoading}
+                onClick={refreshAll}
+                disabled={anyLoading}
                 className={`p-2 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center ${isDark ? "text-white/40 hover:bg-white/8" : "text-gray-400 hover:bg-gray-100"}`}
               >
-                {gcLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {anyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </button>
             )}
             <button onClick={goToPrevMonth} className="p-2 hover:bg-white/10 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -190,15 +279,18 @@ export default function Calendar() {
           </div>
         </div>
 
-        {/* Google Calendar Connect */}
-        <div className="mb-5">
-          <GoogleCalendarConnect
-            connected={connected}
-            loading={connLoading}
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-          />
-        </div>
+        {calendarSyncEnabled && (
+          <div className="mb-5">
+            <CalendarProvidersPanel
+              google={googleState}
+              outlook={outlookState}
+              visible={visibleProviders}
+              onToggleVisible={toggleProviderVisible}
+              onGoogleChanged={refreshGoogle}
+              onOutlookChanged={refreshOutlook}
+            />
+          </div>
+        )}
 
         {/* Calendar Grid */}
         <div className={`${cardBg} border rounded-2xl p-4 mb-6`}>
@@ -214,7 +306,15 @@ export default function Calendar() {
               const date = new Date(year, month, day);
               const dateStr = date.toLocaleDateString();
               const hasSession = dateStr in sessionsByDate;
-              const hasGcEvent = dateStr in gcEventsByDate;
+              const eventsToday = externalEventsByDate[dateStr] || [];
+              const hasGoogleEvent = eventsToday.some((e) =>
+                (e.providers || [e.provider]).includes("google")
+              );
+              const hasOutlookEvent = eventsToday.some((e) =>
+                (e.providers || [e.provider]).includes("outlook")
+              );
+              const hasGcEvent = eventsToday.length > 0;
+              const hasConflict = conflictDates.has(dateStr);
               const isSelected = selectedDate?.toLocaleDateString() === dateStr;
               const isToday = new Date().toLocaleDateString() === dateStr;
 
@@ -233,33 +333,104 @@ export default function Calendar() {
                   }`}
                 >
                   {day}
-                  {/* Dot indicators */}
                   <div className="flex gap-0.5 mt-0.5">
                     {hasSession && <span className="w-1 h-1 rounded-full bg-purple-400" />}
-                    {hasGcEvent && <span className="w-1 h-1 rounded-full bg-blue-400" />}
+                    {hasGoogleEvent && <span className="w-1 h-1 rounded-full" style={{ background: "#4285F4" }} />}
+                    {hasOutlookEvent && <span className="w-1 h-1 rounded-full" style={{ background: "#0078D4" }} />}
+                    {hasConflict && <span className="w-1 h-1 rounded-full bg-red-400" title="Conflict on this day" />}
                   </div>
                 </button>
               );
             })}
           </div>
-          {/* Legend */}
-          <div className="flex gap-4 mt-3 pt-3 border-t border-white/5">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 pt-3 border-t border-white/5">
             <span className={`flex items-center gap-1.5 text-[10px] ${subText}`}><span className="w-2 h-2 rounded-full bg-purple-400" />Silo session</span>
-            {connected && <span className={`flex items-center gap-1.5 text-[10px] ${subText}`}><span className="w-2 h-2 rounded-full bg-blue-400" />Google event</span>}
+            {googleState.connected && <span className={`flex items-center gap-1.5 text-[10px] ${subText}`}><span className="w-2 h-2 rounded-full" style={{ background: "#4285F4" }} />Google</span>}
+            {outlookState.connected && <span className={`flex items-center gap-1.5 text-[10px] ${subText}`}><span className="w-2 h-2 rounded-full" style={{ background: "#0078D4" }} />Outlook</span>}
+            {conflictDayCount > 0 && <span className={`flex items-center gap-1.5 text-[10px] ${subText}`}><span className="w-2 h-2 rounded-full bg-red-400" />Conflict</span>}
           </div>
         </div>
 
-        {/* Upcoming Google Calendar Events */}
-        {connected && (
+        {/* Conflict summary banner */}
+        {conflictPairs.length > 0 && (
+          <div className={`mb-5 rounded-2xl border p-4 ${isDark ? "border-red-500/30 bg-red-500/8" : "border-red-200 bg-red-50"}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className={`w-4 h-4 ${isDark ? "text-red-300" : "text-red-500"}`} />
+              <p className={`text-sm font-semibold ${isDark ? "text-red-200" : "text-red-700"}`}>
+                {conflictPairs.length === 1
+                  ? "1 schedule conflict this week"
+                  : `${conflictPairs.length} schedule conflicts this week`}
+                {conflictDayCount > 0 && (
+                  <span className={`ml-1 font-normal ${isDark ? "text-red-200/70" : "text-red-600/80"}`}>
+                    on {conflictDayCount} day{conflictDayCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </p>
+            </div>
+            <ul className="space-y-1.5">
+              {conflictPairs.map(({ a, b }) => {
+                const startRaw = a.start?.dateTime || a.start?.date || a.start;
+                const when = startRaw
+                  ? new Date(startRaw).toLocaleString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "";
+                return (
+                  <li
+                    key={`${a.id}-${b.id}`}
+                    className={`text-[12px] leading-snug ${isDark ? "text-red-100/90" : "text-red-700"}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => focusEvent(a.id)}
+                      className="font-medium hover:underline"
+                    >
+                      {a.summary || "(no title)"}
+                    </button>
+                    <span className={`mx-1 ${isDark ? "text-red-200/60" : "text-red-500/70"}`}>vs</span>
+                    <button
+                      type="button"
+                      onClick={() => focusEvent(b.id)}
+                      className="font-medium hover:underline"
+                    >
+                      {b.summary || "(no title)"}
+                    </button>
+                    {when && (
+                      <span className={`ml-1 ${isDark ? "text-red-200/60" : "text-red-500/70"}`}>
+                        · {when}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {anyConnected && (
           <div className="mb-6">
             <h2 className="text-base font-semibold mb-3">Upcoming (7 days)</h2>
-            {gcLoading ? (
+            {anyLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
               </div>
             ) : upcomingEvents.length > 0 ? (
               <div className="space-y-2">
-                {upcomingEvents.map(ev => <CalendarEventCard key={ev.id} event={ev} />)}
+                {upcomingEvents.map((ev) => {
+                  const evConflicts = conflictsMap.get(ev.id) || [];
+                  return (
+                    <CalendarEventCard
+                      key={`${ev.provider || "g"}:${ev.id}`}
+                      event={ev}
+                      conflicts={evConflicts}
+                      highlight={evConflicts.length > 0}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className={`rounded-2xl border p-5 text-center ${cardBg}`}>
@@ -276,10 +447,19 @@ export default function Calendar() {
               {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
             </h3>
 
-            {/* Google events on this day */}
-            {gcEventsByDate[selectedDateStr]?.length > 0 && (
+            {externalEventsByDate[selectedDateStr]?.length > 0 && (
               <div className="mb-3 space-y-2">
-                {gcEventsByDate[selectedDateStr].map(ev => <CalendarEventCard key={ev.id} event={ev} />)}
+                {externalEventsByDate[selectedDateStr].map((ev) => {
+                  const evConflicts = conflictsMap.get(ev.id) || [];
+                  return (
+                    <CalendarEventCard
+                      key={`${ev.provider || "g"}:${ev.id}`}
+                      event={ev}
+                      conflicts={evConflicts}
+                      highlight={evConflicts.length > 0}
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -306,7 +486,7 @@ export default function Calendar() {
                   </button>
                 ))}
               </div>
-            ) : !gcEventsByDate[selectedDateStr]?.length ? (
+            ) : !externalEventsByDate[selectedDateStr]?.length ? (
               <div className="text-center py-10">
                 <Mic className="w-8 h-8 text-[#A1A1A6]/30 mx-auto mb-2" />
                 <p className={`text-sm ${subText}`}>Nothing on this day</p>

@@ -10,6 +10,7 @@ import { getPublicSettings } from "../services/deploymentSettings.js";
 import { findInviteByToken } from "../lib/findInviteByToken.js";
 import adminRoutes from "./admin.js";
 import googleRoutes from "./google.js";
+import microsoftRoutes from "./microsoft.js";
 import { filesRouter, buildFileUrl } from "./files.js";
 import { storeAudioBuffer } from "../services/storage/gridfs.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
@@ -319,6 +320,7 @@ router.post("/sessions/:id/check-transcription", requireAuth, async (req, res) =
 
 router.use("/files", filesRouter);
 router.use("/integrations/google", googleRoutes);
+router.use("/integrations/microsoft", microsoftRoutes);
 
 router.post(
   "/integrations/core/upload-file",

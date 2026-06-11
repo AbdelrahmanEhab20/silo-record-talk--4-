@@ -51,6 +51,10 @@ export const config = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || "",
+  microsoftClientId: process.env.MICROSOFT_CLIENT_ID || "",
+  microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+  microsoftRedirectUri: process.env.MICROSOFT_REDIRECT_URI || "",
+  microsoftTenant: process.env.MICROSOFT_TENANT || "common",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ""
 };

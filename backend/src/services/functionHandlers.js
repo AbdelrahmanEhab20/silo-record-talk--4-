@@ -1,4 +1,11 @@
-import { CreditLedger, GoogleIntegration, PlanSubscription, Session, User } from "../models/index.js";
+import {
+  CreditLedger,
+  GoogleIntegration,
+  MicrosoftIntegration,
+  PlanSubscription,
+  Session,
+  User,
+} from "../models/index.js";
 import { config } from "../config/index.js";
 import {
   submitTranscriptionJob,
@@ -8,6 +15,10 @@ import {
 import { analyzeTranscript, detectLanguage, isLlmAvailable } from "./llm/index.js";
 import { getMinutesUsedForEmail } from "./usageMinutes.js";
 import { listUpcomingEvents, createEvent as createGoogleEvent } from "./google/calendar.js";
+import {
+  listUpcomingEvents as listOutlookEvents,
+  createEvent as createOutlookEvent,
+} from "./microsoft/calendar.js";
 
 function ok(data) {
   return { data };
@@ -357,6 +368,35 @@ export const functionHandlers = {
       }
       if (action === "create") {
         const created = await createGoogleEvent(userEmail, payload.event || {});
+        return ok({ connected: true, event_id: created.id, html_link: created.html_link, status: "created" });
+      }
+      return ok({ connected: true, events: [] });
+    } catch (err) {
+      if (err.code === "not_connected") {
+        return ok({ connected: false, events: [], error: "not_connected" });
+      }
+      throw err;
+    }
+  },
+
+  async outlookCalendarUser(payload) {
+    const action = String(payload?.action || "list");
+    const userEmail = String(payload?.user_email || payload?.__userEmail || "");
+    if (!userEmail) return ok({ connected: false, events: [], error: "not_authenticated" });
+
+    const integration = await MicrosoftIntegration.findOne({ user_email: userEmail, revoked_at: null }).lean();
+    if (!integration) {
+      if (action === "create") return ok({ connected: false, error: "not_connected" });
+      return ok({ connected: false, events: [], error: "not_connected" });
+    }
+
+    try {
+      if (action === "list") {
+        const events = await listOutlookEvents(userEmail);
+        return ok({ connected: true, events });
+      }
+      if (action === "create") {
+        const created = await createOutlookEvent(userEmail, payload.event || {});
         return ok({ connected: true, event_id: created.id, html_link: created.html_link, status: "created" });
       }
       return ok({ connected: true, events: [] });
