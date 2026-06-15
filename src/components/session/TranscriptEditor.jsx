@@ -3,31 +3,13 @@ import { useTheme } from "@/lib/ThemeContext";
 import { Search, X, Clock, User, ChevronDown, ChevronUp, Check, Star, Loader2, Copy, Download } from "lucide-react";
 import { appClient } from "@/api/appClient";
 import { usePlayback } from "@/lib/PlaybackContext";
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-const SEGMENT_RE = /^\[(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+?):\s*(.*)/;
-const PART_HEADER_RE = /^\[Part\s+(\d+)\]$/i;
-
-function parseSegments(text) {
-  if (!text) return [];
-  return text.split("\n").map((line, i) => {
-    const partMatch = line.trim().match(PART_HEADER_RE);
-    if (partMatch) return { id: i, isPartHeader: true, partNum: parseInt(partMatch[1], 10), raw: line, timestamp: "", speaker: "", text: line };
-    const m = line.match(SEGMENT_RE);
-    if (m) return { id: i, timestamp: m[1], speaker: m[2].trim(), text: m[3], raw: line };
-    return { id: i, timestamp: "", speaker: "", text: line, raw: line };
-  });
-}
-
-function segmentsToText(segments) {
-  return segments
-    .map((s) => {
-      if (s.timestamp && s.speaker) return `[${s.timestamp}] ${s.speaker}: ${s.text}`;
-      if (s.speaker) return `${s.speaker}: ${s.text}`;
-      return s.text;
-    })
-    .join("\n");
-}
+import {
+  parseSegments,
+  segmentsToText,
+  timestampToSeconds,
+  transcriptSpanSeconds,
+  isTruncatedPreview,
+} from "@/lib/transcript";
 
 function nowTimestamp() {
   const d = new Date();
@@ -56,18 +38,6 @@ const SPEAKER_COLORS = [
   "bg-pink-500/20 text-pink-300 border-pink-500/30",
   "bg-blue-500/20 text-blue-300 border-blue-500/30",
 ];
-
-// ── Truncation detection ───────────────────────────────────────────────────
-const TRUNCATED_MARKERS = [
-  "...[truncated",
-  "see transcript_file_url",
-  "upload failed; transcript truncated",
-];
-
-function isTruncatedPreview(text) {
-  const t = String(text || "");
-  return TRUNCATED_MARKERS.some((m) => t.includes(m));
-}
 
 // ── Resolve a single subsession's transcript, fetching file if truncated ──
 async function resolveSubsessionTranscript(sub) {
@@ -136,7 +106,7 @@ export default function TranscriptEditor({
 
   const [copyState, setCopyState] = useState({ structured: false, raw: false });
   const [downloadingTxt, setDownloadingTxt] = useState(false);
-  const [visibleWindowMin, setVisibleWindowMin] = useState(5);
+  const [loadedMinutes, setLoadedMinutes] = useState(10);
 
   // Hydrated display transcript + loading flag
   const [displayTranscript, setDisplayTranscript] = useState("");
@@ -372,24 +342,8 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
     setMode("raw");
   };
 
-  // ── Visible segments (filtered + 5-min pagination) ─────────────────────────
-  function timestampToSeconds(ts) {
-    if (!ts) return 0;
-    const parts = ts.split(":").map((n) => Number(n) || 0);
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    if (parts.length === 2) return parts[0] * 60 + parts[1];
-    return 0;
-  }
-
-  const transcriptSpanSeconds = useMemo(() => {
-    let max = 0;
-    for (const s of segments) {
-      if (!s.timestamp) continue;
-      const sec = timestampToSeconds(s.timestamp);
-      if (sec > max) max = sec;
-    }
-    return max;
-  }, [segments]);
+  // ── Visible segments (filtered + 10-min load-more pagination) ─────────────
+  const spanSeconds = useMemo(() => transcriptSpanSeconds(segments), [segments]);
 
   const filteredSegments = useMemo(() => {
     if (!search) return segments;
@@ -404,17 +358,17 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
 
   const visibleSegments = useMemo(() => {
     if (search) return filteredSegments;
-    const cutoffSec = visibleWindowMin * 60;
-    if (transcriptSpanSeconds <= cutoffSec) return filteredSegments;
+    const cutoffSec = loadedMinutes * 60;
+    if (spanSeconds <= cutoffSec) return filteredSegments;
     return filteredSegments.filter((s) => {
       if (s.isPartHeader) return true;
       if (!s.timestamp) return true;
       return timestampToSeconds(s.timestamp) < cutoffSec;
     });
-  }, [filteredSegments, search, visibleWindowMin, transcriptSpanSeconds]);
+  }, [filteredSegments, search, loadedMinutes, spanSeconds]);
 
-  const hasMore = !search && transcriptSpanSeconds > visibleWindowMin * 60;
-  const remainingMinutes = Math.max(0, Math.ceil(transcriptSpanSeconds / 60) - visibleWindowMin);
+  const hasMore = !search && spanSeconds > loadedMinutes * 60;
+  const totalMinutes = Math.ceil(spanSeconds / 60);
 
   const card = isDark ? "bg-[#1C1C1E] border-white/8" : "bg-white border-gray-100";
   const textSub = isDark ? "text-white/40" : "text-gray-400";
@@ -695,27 +649,18 @@ ${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`
               )}
 
               {hasMore && (
-                <div className={`px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ${isDark ? "bg-purple-500/5" : "bg-purple-50/50"}`}>
-                  <p className={`text-xs flex-1 ${textSub}`}>
-                    Showing first <strong>{visibleWindowMin} min</strong> of {Math.ceil(transcriptSpanSeconds / 60)} min total
-                    {remainingMinutes > 0 ? ` · ${remainingMinutes} min remaining` : ""}
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <p className={`text-[11px] ${textSub}`}>
+                    Showing first <strong>{loadedMinutes} min</strong> of {totalMinutes} min total
                   </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVisibleWindowMin((m) => m + 5)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500 text-white hover:bg-purple-600 transition-colors"
-                    >
-                      Show next 5 min
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVisibleWindowMin(Math.ceil(transcriptSpanSeconds / 60) + 5)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${isDark ? "border-white/10 text-white/70 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
-                    >
-                      Show all
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLoadedMinutes((m) => m + 10)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Load More (next 10 minutes)
+                  </button>
                 </div>
               )}
 

@@ -38,17 +38,7 @@ import ManualNotes from "@/components/session/ManualNotes";
 import SpeakerTimeline from "@/components/session/SpeakerTimeline";
 import VideoPlayer from "@/components/session/VideoPlayer";
 
-// ── Truncation detection ────────────────────────────────────────────────────
-const TRUNCATED_MARKERS = [
-  "...[truncated",
-  "see transcript_file_url",
-  "upload failed; transcript truncated",
-];
-
-function isTruncatedPreview(text) {
-  const t = String(text || "");
-  return TRUNCATED_MARKERS.some((m) => t.includes(m));
-}
+import { isTruncatedPreview } from "@/lib/transcript";
 
 // ── Statuses that mean the pipeline is still running ───────────────────────
 const ACTIVE_STATUSES = new Set([
@@ -68,6 +58,7 @@ export default function SessionDetail() {
   const [subscription, setSubscription] = useState(null);
   const [summaryText, setSummaryText] = useState(null);
   const [transcriptText, setTranscriptText] = useState(null);
+  const [loadingFullTranscript, setLoadingFullTranscript] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -226,6 +217,7 @@ export default function SessionDetail() {
 
       if (!looksTruncated) return; // Already have full text — nothing to do
 
+      setLoadingFullTranscript(true);
       try {
         const res = await fetch(session.transcript_file_url);
         if (!res.ok) throw new Error(`Failed to fetch transcript file: ${res.status}`);
@@ -235,6 +227,8 @@ export default function SessionDetail() {
         }
       } catch (e) {
         console.error("Failed to load full transcript from transcript_file_url:", e);
+      } finally {
+        setLoadingFullTranscript(false);
       }
     };
 
@@ -835,6 +829,18 @@ export default function SessionDetail() {
 
           {/* Transcript Editor */}
           <div className="mb-8">
+            {loadingFullTranscript && (
+              <div
+                className={`flex items-center gap-2 px-3 py-2 mb-3 rounded-xl text-xs ${
+                  isDark
+                    ? "bg-purple-500/10 text-purple-300 border border-purple-500/20"
+                    : "bg-purple-50 text-purple-700 border border-purple-100"
+                }`}
+              >
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading full transcript…
+              </div>
+            )}
             <TranscriptEditor
               transcript={currentTranscript}
               subsessions={hasSubsessions ? subsessions : null}
