@@ -4,6 +4,7 @@ import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import PasswordInput from "@/components/ui/PasswordInput";
+import PoweredBy from "@/components/PoweredBy";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function Login() {
     : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400";
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${bg}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-10 ${bg}`}>
       <div className={`w-full max-w-md rounded-2xl border p-6 ${card}`}>
         <h1 className="text-2xl font-bold mb-1">Welcome back</h1>
         <p className={`text-sm mb-6 ${isDark ? "text-white/60" : "text-gray-500"}`}>
@@ -90,6 +91,7 @@ export default function Login() {
           </button>
         </form>
       </div>
+      <PoweredBy className="mt-6" />
     </div>
   );
 }

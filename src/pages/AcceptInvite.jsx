@@ -6,6 +6,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "@/components/ui/PasswordInput";
+import PoweredBy from "@/components/PoweredBy";
 
 const ROLE_LABELS = {
   member: "Member",
@@ -104,7 +105,7 @@ export default function AcceptInvite() {
   const sub = isDark ? "text-white/60" : "text-gray-500";
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${bg}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-10 ${bg}`}>
       <div className={`w-full max-w-md rounded-2xl border p-6 ${card}`}>
         <h1 className="text-2xl font-bold mb-1">Accept invitation</h1>
         <p className={`text-sm mb-6 ${sub}`}>Join {appName} and set your password.</p>
@@ -178,6 +179,7 @@ export default function AcceptInvite() {
           </>
         )}
       </div>
+      <PoweredBy className="mt-6" />
     </div>
   );
 }

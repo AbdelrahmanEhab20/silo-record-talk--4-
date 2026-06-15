@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { adminApi } from "@/api/adminApi";
 import { appClient } from "@/api/appClient";
 import { useAuth } from "@/lib/AuthContext";
+import PoweredBy from "@/components/PoweredBy";
 import {
   AlertCircle,
   Check,
   Image as ImageIcon,
+  Info,
   Loader2,
   Palette,
   Trash2,
@@ -354,6 +356,24 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
           >
             Sign in
           </button>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${
+          isDark ? "bg-white/5 border-white/8" : "bg-gray-50 border-gray-200"
+        }`}
+      >
+        <Info className={`w-4 h-4 mt-0.5 shrink-0 ${textSub}`} />
+        <div className="flex-1">
+          <p className={`text-xs ${textMain}`}>
+            <span className="font-semibold">Platform attribution.</span> A small
+            "Powered by Silo" badge appears on sign-in, invitation and shared
+            session pages. It cannot be hidden from this panel.
+          </p>
+          <div className="mt-2">
+            <PoweredBy variant={isDark ? "dark" : "light"} className="justify-start" />
+          </div>
         </div>
       </div>
 

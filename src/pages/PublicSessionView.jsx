@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
 import StructuredMinutes from "@/components/session/StructuredMinutes";
 import TagPills from "@/components/session/TagPills";
+import PoweredBy from "@/components/PoweredBy";
 import { SESSION_TYPES } from "@/lib/sessionTypes";
 
 // ── Transcript helpers ──────────────────────────────────────────
@@ -279,9 +280,10 @@ export default function PublicSessionView() {
 
         {/* Footer */}
         <div className={`text-center py-8 border-t ${border}`}>
-          <p className={`text-xs ${isDark ? "text-white/30" : "text-gray-400"}`}>
+          <p className={`text-xs mb-3 ${isDark ? "text-white/30" : "text-gray-400"}`}>
             This is a read-only shared view. To edit or manage this session, sign in to your account.
           </p>
+          <PoweredBy variant={isDark ? "dark" : "light"} />
         </div>
       </div>
     </div>
