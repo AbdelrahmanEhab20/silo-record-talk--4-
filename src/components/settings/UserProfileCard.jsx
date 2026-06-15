@@ -140,7 +140,13 @@ export default function UserProfileCard() {
 
   return (
     <div className={`${card} rounded-2xl overflow-hidden shadow-sm`}>
-      <div className="h-20 w-full" style={{ background: "linear-gradient(135deg, #A855F7, #6366F1, #22D3EE)" }} />
+      <div
+        className="h-20 w-full"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--brand-accent, #A855F7), var(--brand-primary, #6366F1), #22D3EE)",
+        }}
+      />
 
       <div className="px-5 pb-5">
         <div className="flex items-end justify-between -mt-10 mb-4">

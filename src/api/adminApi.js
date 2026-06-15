@@ -25,4 +25,10 @@ export const adminApi = {
   revokeInvite(id) {
     return apiRequest(`/admin/invites/${id}`, { method: "DELETE" });
   },
+  getDeploymentSettings() {
+    return apiRequest("/admin/deployment-settings");
+  },
+  updateDeploymentSettings(patch) {
+    return apiRequest("/admin/deployment-settings", { method: "PATCH", body: patch });
+  },
 };

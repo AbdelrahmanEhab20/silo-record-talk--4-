@@ -19,6 +19,7 @@ import {
 } from "react-router-dom";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import BrandingEffect from "@/lib/BrandingEffect";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
 import Recording from "./pages/Recording";
@@ -394,6 +395,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClientInstance}>
+          <BrandingEffect />
           <Router>
             <AuthenticatedApp />
           </Router>

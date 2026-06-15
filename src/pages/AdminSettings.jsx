@@ -4,8 +4,9 @@ import { useTheme } from "@/lib/ThemeContext";
 import LLMProvidersSection from "@/components/admin/LLMProvidersSection";
 import OrgUsageSettings from "@/components/admin/OrgUsageSettings";
 import FeatureAISection from "@/components/admin/FeatureAISection";
+import BrandingPanel from "@/components/admin/BrandingPanel";
 import {
-  Shield, Cpu, ChevronDown, ChevronUp, Save, Users
+  Shield, Cpu, ChevronDown, ChevronUp, Save, Users, Palette
 } from "lucide-react";
 import { isSystemAdmin } from "@/lib/roles";
 
@@ -28,6 +29,7 @@ const DEFAULT_SETTINGS = {
 const TABS = [
   { key: "ai", label: "AI Models", icon: Cpu },
   { key: "usage", label: "Usage & Limits", icon: Users },
+  { key: "branding", label: "Branding", icon: Palette },
 ];
 
 export default function AdminSettings() {
@@ -140,18 +142,20 @@ export default function AdminSettings() {
           ))}
         </div>
 
-        {/* Save Button — per tab */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #A855F7, #6366F1)" }}
-          >
-            <Save className="w-4 h-4" />
-            {saving ? "Saving…" : savedMsg ? "Saved ✓" : "Save"}
-          </button>
-        </div>
+        {/* Save Button — per tab (Branding manages its own save) */}
+        {activeTab !== "branding" && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, var(--brand-accent, #A855F7), var(--brand-primary, #6366F1))" }}
+            >
+              <Save className="w-4 h-4" />
+              {saving ? "Saving…" : savedMsg ? "Saved ✓" : "Save"}
+            </button>
+          </div>
+        )}
 
         {/* AI Models Tab */}
         {activeTab === "ai" && (
@@ -227,6 +231,10 @@ export default function AdminSettings() {
               textSub={textSub}
             />
           </div>
+        )}
+
+        {activeTab === "branding" && (
+          <BrandingPanel isDark={isDark} textMain={textMain} textSub={textSub} card={card} />
         )}
       </div>
     </div>

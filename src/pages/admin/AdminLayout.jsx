@@ -19,11 +19,14 @@ const navLinkClass = ({ isActive }, isDark) =>
 export default function AdminLayout() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, appPublicSettings } = useAuth();
   const bg = isDark ? "bg-[#0A0A0A]" : "bg-[#F5F5F7]";
   const card = isDark ? "bg-[#1C1C1E] border-white/8" : "bg-white border-gray-200";
   const text = isDark ? "text-white" : "text-gray-900";
   const sub = isDark ? "text-white/40" : "text-gray-500";
+  const brandAppName = appPublicSettings?.public_settings?.app_name || "";
+  const headingBase = isSystemAdmin(user) ? "Administration" : "Organization admin";
+  const heading = brandAppName ? `${brandAppName} · ${headingBase}` : headingBase;
 
   return (
     <div className={`min-h-screen ${bg}`}>
@@ -39,9 +42,7 @@ export default function AdminLayout() {
             <ChevronLeft className={`w-5 h-5 ${text}`} />
           </button>
           <div className="flex-1">
-            <h1 className={`text-lg font-semibold ${text}`}>
-              {isSystemAdmin(user) ? "Administration" : "Organization admin"}
-            </h1>
+            <h1 className={`text-lg font-semibold ${text}`}>{heading}</h1>
             <p className={`text-xs ${sub}`}>
               Users · roles · invitations · usage
             </p>

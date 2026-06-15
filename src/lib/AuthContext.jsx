@@ -35,9 +35,7 @@ export const AuthProvider = ({ children }) => {
       
       // Now check app public settings
       try {
-        const publicSettingsRes = await fetch(`${appParams.apiBaseUrl}/app/public-settings`);
-        const publicSettings = await publicSettingsRes.json();
-        setAppPublicSettings(publicSettings);
+        await refreshPublicSettings();
       } catch (appError) {
         console.error('App state check failed:', appError);
         
@@ -139,6 +137,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Re-fetch the deployment branding (app name, logo, colors, etc.).
+   * Called by the Branding admin form after a successful save so other
+   * mounted components pick up the new values without a hard reload.
+   */
+  const refreshPublicSettings = async () => {
+    try {
+      const res = await fetch(`${appParams.apiBaseUrl}/app/public-settings`);
+      if (!res.ok) throw new Error(`Failed to load public settings (${res.status})`);
+      const data = await res.json();
+      setAppPublicSettings(data);
+      return data;
+    } catch (err) {
+      console.error("refreshPublicSettings failed:", err);
+      return null;
+    }
+  };
+
   const navigateToLogin = () => {
     appClient.auth.redirectToLogin(window.location.pathname + window.location.search);
   };
@@ -154,7 +170,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkAppState,
-      refreshUser
+      refreshUser,
+      refreshPublicSettings
     }}>
       {children}
     </AuthContext.Provider>

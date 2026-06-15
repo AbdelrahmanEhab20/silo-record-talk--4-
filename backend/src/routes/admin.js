@@ -2,7 +2,7 @@ import express from "express";
 import { config } from "../config/index.js";
 import { loadDbUser, requireAuth, requireRole, isSystemAdminRole, normalizeRole } from "../middleware/auth.js";
 import { generateInviteToken, hashInviteToken, tokenLookup } from "../lib/inviteToken.js";
-import { Invite, User } from "../models/index.js";
+import { DeploymentSettings, Invite, User } from "../models/index.js";
 import { getDeploymentSettings } from "../services/deploymentSettings.js";
 import { sendInviteEmailForUser } from "../services/sendInviteEmail.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
@@ -276,6 +276,101 @@ router.delete("/invites/:id", async (req, res) => {
   );
   if (!inv) return res.status(404).json({ error: { message: "Invite not found" } });
   res.json({ success: true });
+});
+
+// ── Deployment branding (system_admin only) ────────────────────────────────
+
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{6})$/;
+const LOCALE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
+
+const BRANDING_FIELDS = {
+  app_name: { type: "string", max: 60 },
+  logo_url: { type: "string", max: 2048 },
+  favicon_url: { type: "string", max: 2048 },
+  primary_color: { type: "color" },
+  accent_color: { type: "color" },
+  support_email: { type: "string", max: 120 },
+  default_locale: { type: "locale", max: 8 },
+  email_from_name: { type: "string", max: 120 },
+};
+
+function sanitizeBrandingUpdate(body) {
+  const out = {};
+  if (!body || typeof body !== "object") return out;
+  for (const [key, rule] of Object.entries(BRANDING_FIELDS)) {
+    if (body[key] === undefined) continue;
+    const raw = body[key];
+    if (raw === null) {
+      out[key] = "";
+      continue;
+    }
+    if (typeof raw !== "string") continue;
+    let value = raw.trim();
+
+    if (rule.type === "color") {
+      if (value === "") {
+        out[key] = "";
+        continue;
+      }
+      if (!HEX_COLOR_RE.test(value)) continue;
+      out[key] = value.toUpperCase();
+      continue;
+    }
+
+    if (rule.type === "locale") {
+      if (value === "") {
+        out[key] = "";
+        continue;
+      }
+      if (!LOCALE_RE.test(value)) continue;
+      out[key] = value;
+      continue;
+    }
+
+    if (rule.max && value.length > rule.max) value = value.slice(0, rule.max);
+    out[key] = value;
+  }
+  return out;
+}
+
+function serializeDeploymentSettings(doc) {
+  return {
+    app_name: doc.app_name || "Silo",
+    logo_url: doc.logo_url || "",
+    favicon_url: doc.favicon_url || "",
+    primary_color: doc.primary_color || "#6366F1",
+    accent_color: doc.accent_color || "#A855F7",
+    support_email: doc.support_email || "",
+    default_locale: doc.default_locale || "en",
+    email_from_name: doc.email_from_name || "",
+    updatedAt: doc.updatedAt,
+  };
+}
+
+router.get("/deployment-settings", requireRole("system_admin"), async (_req, res, next) => {
+  try {
+    const doc = await getDeploymentSettings();
+    res.json({ settings: serializeDeploymentSettings(doc) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/deployment-settings", requireRole("system_admin"), async (req, res, next) => {
+  try {
+    const updates = sanitizeBrandingUpdate(req.body);
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: { message: "No editable branding fields provided" } });
+    }
+    const doc = await DeploymentSettings.findOneAndUpdate(
+      { singleton_key: "default" },
+      { $set: updates, $setOnInsert: { singleton_key: "default" } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+    res.json({ settings: serializeDeploymentSettings(doc) });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

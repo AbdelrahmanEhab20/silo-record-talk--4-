@@ -4,6 +4,7 @@ import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
+import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
 import StructuredMinutes from "@/components/session/StructuredMinutes";
 import TagPills from "@/components/session/TagPills";
@@ -49,6 +50,8 @@ export default function PublicSessionView() {
   const navigate = useNavigate();
   const { code: shareCode } = useParams();
   const { isDark } = useTheme();
+  const { appPublicSettings } = useAuth();
+  const brandAppName = appPublicSettings?.public_settings?.app_name || "Silo";
   const [mergedTranscript, setMergedTranscript] = useState(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
 
@@ -126,9 +129,9 @@ export default function PublicSessionView() {
     setMeta("description", description, true);
 
     return () => {
-      document.title = "SILO";
+      document.title = brandAppName;
     };
-  }, [session?.title, shareCode]);
+  }, [session?.title, shareCode, brandAppName]);
 
   const isLoading = shareLoading || sessionLoading;
 

@@ -1,4 +1,5 @@
-import React, { forwardRef, useState } from "react";
+// @ts-nocheck
+import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 /**
@@ -7,11 +8,8 @@ import { Eye, EyeOff } from "lucide-react";
  * prop (value, onChange, required, minLength, autoComplete, etc.) plus a
  * `className` that is applied to the underlying input.
  */
-const PasswordInput = forwardRef(function PasswordInput(
-  { className = "", showToggle = true, ...inputProps },
-  ref
-) {
-  const [visible, setVisible] = useState(false);
+const PasswordInput = React.forwardRef(({ className = "", showToggle = true, ...inputProps }, ref) => {
+  const [visible, setVisible] = React.useState(false);
 
   return (
     <div className="relative">
@@ -29,7 +27,7 @@ const PasswordInput = forwardRef(function PasswordInput(
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Hide password" : "Show password"}
           title={visible ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 right-0 flex items-center justify-center w-10 text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/80 transition-colors"
+          className="absolute inset-y-0 right-0 flex items-center justify-center w-10 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
         >
           {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
@@ -37,5 +35,6 @@ const PasswordInput = forwardRef(function PasswordInput(
     </div>
   );
 });
+PasswordInput.displayName = "PasswordInput";
 
 export default PasswordInput;

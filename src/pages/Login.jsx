@@ -84,7 +84,7 @@ export default function Login() {
             type="submit"
             disabled={loading}
             className="w-full rounded-xl py-2.5 font-semibold text-white disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #A855F7, #6366F1, #22D3EE)" }}
+            style={{ background: "linear-gradient(135deg, var(--brand-accent, #A855F7), var(--brand-primary, #6366F1))" }}
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>

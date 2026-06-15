@@ -82,6 +82,7 @@ export async function sendTemplate({ template, to, vars }) {
     appName: settings.app_name || config.emailFromName || "Silo",
     logoUrl: settings.logo_url || "",
     primaryColor: settings.primary_color || "#6366F1",
+    accentColor: settings.accent_color || "#A855F7",
     supportEmail: settings.support_email || config.emailReplyTo || "",
   };
 
