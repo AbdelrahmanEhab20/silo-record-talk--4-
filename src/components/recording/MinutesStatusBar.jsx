@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
 import {
@@ -7,7 +8,6 @@ import {
   getUsagePeriodLabel,
   getDisplayCap,
   getRemainingMinutes,
-  getUsagePercent,
 } from "@/utils/planConfig";
 
 function formatMinutes(total) {
@@ -39,45 +39,28 @@ export default function MinutesStatusBar() {
   const used = getMinutesUsed(sub);
   const cap = getDisplayCap(sub);
   const remaining = cap != null ? getRemainingMinutes(sub) : null;
-  const pct = cap != null ? getUsagePercent(sub) : 0;
   const periodLabel = getUsagePeriodLabel();
 
   return (
     <button
       type="button"
       onClick={() => navigate("/Usage")}
-      className={`mx-5 mb-4 w-[calc(100%-2.5rem)] text-left px-4 py-3 rounded-2xl border transition-colors ${
+      className={`w-full text-left px-3.5 py-2.5 rounded-2xl border flex items-center gap-2.5 transition-colors ${
         isDark ? "bg-white/5 border-white/8 hover:bg-white/8" : "bg-white border-gray-100 hover:bg-gray-50"
       }`}
     >
-      <div className="flex items-center justify-between mb-1.5">
-        <span className={`text-xs font-semibold ${isDark ? "text-white/70" : "text-gray-700"}`}>
-          {periodLabel}
-        </span>
-        <span className={`text-xs ${isDark ? "text-white/40" : "text-gray-400"}`}>
+      <span aria-hidden className="text-base leading-none">
+        👑
+      </span>
+      <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+        {periodLabel}
+      </span>
+      <span className="ml-auto flex items-center gap-2">
+        <span className={`text-xs ${isDark ? "text-white/60" : "text-gray-500"}`}>
           {cap != null ? `${formatMinutes(remaining)} left` : `${formatMinutes(used)} used`}
         </span>
-      </div>
-      {cap != null ? (
-        <>
-          <div className={`w-full h-1.5 rounded-full ${isDark ? "bg-white/10" : "bg-gray-100"}`}>
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${pct}%`,
-                background: "linear-gradient(90deg, #A855F7, #6366F1)",
-              }}
-            />
-          </div>
-          <p className={`text-[10px] mt-1 ${isDark ? "text-white/30" : "text-gray-400"}`}>
-            {formatMinutes(used)} of {formatMinutes(cap)} recorded
-          </p>
-        </>
-      ) : (
-        <p className={`text-[10px] mt-0.5 ${isDark ? "text-white/30" : "text-gray-400"}`}>
-          {formatMinutes(used)} recorded · Tap for details
-        </p>
-      )}
+        <ChevronRight className={`w-4 h-4 ${isDark ? "text-white/40" : "text-gray-400"}`} />
+      </span>
     </button>
   );
 }

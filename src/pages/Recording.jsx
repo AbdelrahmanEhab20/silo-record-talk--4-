@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { appClient } from "@/api/appClient";
-import { Button } from "@/components/ui/button";
-import { Square, X, Play, Pause, Loader2, ArrowLeft, ChevronDown, Plus, Star } from "lucide-react";
-import ProcessingBanner from "@/components/session/ProcessingBanner";
+import { Square, X, Play, Pause, ArrowLeft, Plus, Star } from "lucide-react";
 import MicSettings from "@/components/recording/MicSettings";
 import RecordingIndicator from "@/components/recording/RecordingIndicator";
 import SubSessionList from "@/components/recording/SubSessionList";
@@ -15,13 +13,11 @@ import { useTheme } from "@/lib/ThemeContext";
 import { ChunkProcessor } from "@/lib/chunkProcessor";
 import AudioModeCard from "@/components/audio/AudioModeCard";
 import DeviceSetupAssistant from "@/components/audio/DeviceSetupAssistant";
-import TranscriptPreview from "@/components/audio/TranscriptPreview";
 import UnsupportedFallback from "@/components/audio/UnsupportedFallback";
 import SiloAgent from "@/components/recording/SiloAgent";
 import MinutesStatusBar from "@/components/recording/MinutesStatusBar";
 import QuickNotes from "@/components/recording/QuickNotes";
 import LanguageSelector from "@/components/session/LanguageSelector";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import SessionContextPanel from "@/components/recording/SessionContextPanel";
 import TranscriptionSources from "@/components/recording/TranscriptionSources";
 import LiveTranscriptBox from "@/components/recording/LiveTranscriptBox";
@@ -110,7 +106,6 @@ export default function Recording() {
   const [uploadStage, setUploadStage] = useState(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
-  const [audioSourceOpen, setAudioSourceOpen] = useState(true);
   const [quickNotes, setQuickNotes] = useState([]);
   const quickNotesRef = useRef([]);
   const [chunkInsights, setChunkInsights] = useState([]);
@@ -1510,33 +1505,32 @@ export default function Recording() {
   // ── Start Screen ──
   const recommendedMode = platform ? getRecommendedMode(platform) : AUDIO_MODES.MICROPHONE;
   const modes = [
-    { mode: AUDIO_MODES.MICROPHONE, label: 'Microphone', icon: '🎤', description: 'Your voice only' },
-    { mode: AUDIO_MODES.INTERNAL, label: 'Internal Audio', icon: '🎧', description: 'Remote speakers only' },
-    { mode: AUDIO_MODES.INTERNAL_MIC, label: 'Internal + Mic', icon: '🎙️', description: '⭐ Best for meetings' },
+    { mode: AUDIO_MODES.MICROPHONE, label: 'Microphone', icon: '🎤' },
+    { mode: AUDIO_MODES.INTERNAL, label: 'Internal Audio', icon: '🎧' },
+    { mode: AUDIO_MODES.INTERNAL_MIC, label: 'Internal + Mic', icon: '🎙️' },
   ];
 
   return (
     <div className={`${bg} min-h-screen py-8 px-5 pb-24 flex flex-col`}>
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col space-y-3">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors ${isDark ? 'bg-white/5 border-white/8 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
             <X className="w-4 h-4" />
           </button>
           <h1 className="text-2xl font-bold">New Session</h1>
         </div>
 
-        {/* Language Selector */}
-        <div className="mb-4">
-          <p className={`text-xs font-semibold uppercase tracking-wider ${textSub} mb-3`}>Language</p>
-          <LanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} loading={false} />
-        </div>
-
         {/* Minutes Status */}
         <MinutesStatusBar />
 
+        {/* Language Selector */}
+        <div>
+          <LanguageSelector value={selectedLanguage} onChange={setSelectedLanguage} loading={false} />
+        </div>
+
         {/* Record Button */}
-        <div className="flex flex-col items-center gap-4 my-8">
+        <div className="flex flex-col items-center gap-2 py-4">
           <button
             onClick={() => {
               const mode = selectedMode || recommendedMode;
@@ -1547,19 +1541,55 @@ export default function Recording() {
                 startRecording(mode);
               }
             }}
-            className="relative w-40 h-40 rounded-full flex items-center justify-center active:scale-95 transition-transform duration-200"
+            className="relative w-36 h-36 rounded-full flex items-center justify-center active:scale-95 transition-transform duration-200"
           >
             <div className="absolute inset-0 rounded-full blur-2xl opacity-60" style={{ background: "radial-gradient(circle at 40% 35%, #C084FC, #818CF8 50%, #38BDF8)" }} />
             <div className="absolute inset-3 rounded-full" style={{ background: "radial-gradient(circle at 40% 35%, #C084FC, #818CF8 50%, #38BDF8)" }} />
           </button>
           <div className="text-center">
             <p className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Tap to Record</p>
-            <p className={`text-xs ${textSub} mt-1`}>Using: {modes.find(m => m.mode === (selectedMode || recommendedMode))?.label || 'Microphone'}</p>
+            <p className={`text-xs ${textSub} mt-1`}>
+              {modes.find(m => m.mode === (selectedMode || recommendedMode))?.icon}{" "}
+              {modes.find(m => m.mode === (selectedMode || recommendedMode))?.label || 'Microphone'}
+            </p>
           </div>
         </div>
 
+        {/* Audio Source */}
+        <div className={`rounded-2xl border p-3 ${card} ${border}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSub}`}>Audio Source</p>
+          <div className="flex gap-1.5">
+            {modes.map(({ mode, label, icon }) => {
+              const supported = !platform || isModeSupported(mode, platform);
+              const isSelected = selectedMode === mode;
+              const isRecommended = mode === recommendedMode;
+              return (
+                <button
+                  key={mode}
+                  disabled={!supported}
+                  onClick={() => supported && setSelectedMode(mode)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-medium border transition-all ${
+                    !supported ? 'opacity-30 cursor-not-allowed' :
+                    isSelected
+                      ? 'border-purple-500 bg-purple-500/15 text-purple-400'
+                      : isDark ? 'border-white/10 bg-white/5 text-white/60 hover:bg-white/10' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <span>{icon}</span>
+                  <span className="truncate">{label}</span>
+                  {isRecommended && !isSelected && <span className="text-purple-400 text-[10px] shrink-0">★</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {(selectedMode === AUDIO_MODES.MICROPHONE || !selectedMode) && (
+          <MicSettings selectedDeviceId={selectedDeviceId} onDeviceChange={setSelectedDeviceId} disabled={recording} />
+        )}
+
         {/* Transcription Sources + Context */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <TranscriptionSources
             onUploadFile={handleUploadFile}
             onVideoUrl={handleVideoUrl}
@@ -1568,48 +1598,7 @@ export default function Recording() {
             uploadStage={uploadStage}
             error={error}
           />
-
-          {/* Session Context Panel */}
           <SessionContextPanel onChange={setSessionContext} />
-
-          {/* Audio Mode Selector */}
-          <Collapsible open={audioSourceOpen} onOpenChange={setAudioSourceOpen}>
-            <CollapsibleTrigger className="w-full flex items-center justify-between mb-3">
-              <p className={`text-xs font-semibold uppercase tracking-wider ${textSub}`}>Audio Source</p>
-              <ChevronDown className={`w-4 h-4 transition-transform ${audioSourceOpen ? 'rotate-180' : ''} ${textSub}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-2">
-                {modes.map(({ mode, label, icon, description }) => {
-                  const supported = !platform || isModeSupported(mode, platform);
-                  const isSelected = selectedMode === mode;
-                  const isRecommended = mode === recommendedMode;
-                  return (
-                    <button key={mode} disabled={!supported} onClick={() => supported && setSelectedMode(mode)}
-                      className={`w-full ${card} rounded-2xl border p-4 text-left transition-all ${!supported ? 'opacity-40 cursor-not-allowed' : isSelected ? 'border-purple-500 ring-1 ring-purple-500/40' : `${border} hover:border-purple-400/50`}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</span>
-                            {isRecommended && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-500/20 text-purple-400">Recommended</span>}
-                          </div>
-                          <p className={`text-xs mt-0.5 ${textSub}`}>{description}</p>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-purple-500 bg-purple-500' : isDark ? 'border-white/20' : 'border-gray-300'}`}>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {(selectedMode === AUDIO_MODES.MICROPHONE || !selectedMode) && (
-            <MicSettings selectedDeviceId={selectedDeviceId} onDeviceChange={setSelectedDeviceId} disabled={recording} />
-          )}
         </div>
       </div>
     </div>
