@@ -39,7 +39,6 @@ import TermsOfService from "./pages/TermsOfService";
 import Support from "./pages/Support";
 import Insights from "./pages/Insights";
 import ArchivedSessions from "./pages/ArchivedSessions";
-import LearningProgress from "./pages/LearningProgress";
 import Courses from "./pages/Courses";
 import AdminSettings from "./pages/AdminSettings";
 import Login from "./pages/Login";
@@ -331,16 +330,6 @@ const AuthenticatedApp = () => {
           <ProtectedRoute>
             <LayoutWrapper currentPageName="ArchivedSessions">
               <ArchivedSessions />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/LearningProgress"
-        element={
-          <ProtectedRoute>
-            <LayoutWrapper currentPageName="LearningProgress">
-              <LearningProgress />
             </LayoutWrapper>
           </ProtectedRoute>
         }
