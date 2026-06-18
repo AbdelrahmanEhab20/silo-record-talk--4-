@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Plus, Mic, Loader2, Trash2, CheckSquare, Search, FolderOpen, ChevronDown, Check, Folder, FolderInput, FileText, BookOpen, Users, Archive, Flag } from "lucide-react";
+import { Plus, Mic, Loader2, Trash2, CheckSquare, Search, FolderOpen, ChevronDown, Check, Folder, FolderInput, FileText, BookOpen, Archive, Flag } from "lucide-react";
 import FolderReportModal from "@/components/session/FolderReportModal";
 import SavedReportsModal from "@/components/session/SavedReportsModal";
 import { colorForFolder } from "@/components/FolderBadge";
@@ -282,12 +282,6 @@ export default function Home() {
                 >
                   <Search className="w-3.5 h-3.5" />
                 </button>
-                <Link
-                  to="/Workspaces"
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-white/8 text-white/50 hover:bg-white/14 hover:text-white' : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-900'}`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                </Link>
                 <button
                   onClick={() => setFolderSidebarOpen(true)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors relative ${activeFolder ? 'bg-purple-500/15 text-purple-400' : isDark ? 'bg-white/8 text-white/50 hover:bg-white/14 hover:text-white' : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-900'}`}

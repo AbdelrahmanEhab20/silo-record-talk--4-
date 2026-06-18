@@ -24,7 +24,6 @@ import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
 import Recording from "./pages/Recording";
 import Landing from "./pages/Landing";
-import Workspaces from "./pages/Workspaces";
 import Pricing from "./pages/Pricing";
 import Usage from "./pages/Usage";
 import ProductivityDashboard from "./pages/ProductivityDashboard";
@@ -242,16 +241,6 @@ const AuthenticatedApp = () => {
           <ProtectedRoute>
             <LayoutWrapper currentPageName="Usage">
               <Usage />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/Workspaces"
-        element={
-          <ProtectedRoute>
-            <LayoutWrapper currentPageName="Workspaces">
-              <Workspaces />
             </LayoutWrapper>
           </ProtectedRoute>
         }
