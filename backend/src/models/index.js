@@ -102,6 +102,7 @@ const SessionSchema = new mongoose.Schema(
   {
     user_email: { type: String, required: true, index: true },
     title: String,
+    title_source: { type: String, enum: ["placeholder", "ai", "user"], default: "placeholder" },
     duration: { type: Number, default: 0 },
     transcript_text: String,
     transcript_file_url: String,

@@ -6,6 +6,7 @@ import StructuredMinutes from "./StructuredMinutes";
 import ExportShare from "./ExportShare";
 import TranscriptQualityWarning from "./TranscriptQualityWarning";
 import RegenerationWarningDialog from "./RegenerationWarningDialog";
+import { isActiveProcessingStatus } from "@/lib/sessionProcessing";
 
 const TRUNCATED_MARKERS = ["...[truncated", "see transcript_file_url", "[upload failed; transcript truncated]"];
 
@@ -136,7 +137,7 @@ useEffect(() => {
   if (!transcript || !transcript.trim()) return;
 
   // Wait until backend processing is done
-  if (session?.processing_status === "pending" || session?.processing_status === "processing") return;
+  if (isActiveProcessingStatus(session?.processing_status) || session?.assemblyai_job_id) return;
 
   const issue = checkTranscriptQuality(transcript);
   if (issue) return;
@@ -424,7 +425,7 @@ Summary: ${summaryText.slice(0, 1000)}`;
         {audioUrl && (
           <div className="text-center py-4 border border-dashed border-gray-200 dark:border-[#3A3A3C] rounded-xl">
             {(() => {
-              const isProcessing = session?.processing_status === 'processing' || session?.assemblyai_job_id;
+              const isProcessing = isActiveProcessingStatus(session?.processing_status) || session?.assemblyai_job_id;
               if (!transcript) {
                 return (
                   <>

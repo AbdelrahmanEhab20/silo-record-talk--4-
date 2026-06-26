@@ -295,6 +295,7 @@ function generatePDF({ report, folderName, sessions, generatedAt }) {
 export default function FolderReportModal({ folderName, sessions, user, onClose, initialReport }) {
   const { isDark } = useTheme();
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
   const [report, setReport] = useState(initialReport?.report_data || null);
   const [savedReport, setSavedReport] = useState(initialReport || null);
   const [expandedSection, setExpandedSection] = useState(null);
@@ -398,8 +399,10 @@ ${combinedSummary}`,
 
   const generateReport = async () => {
     setGenerating(true);
+    setGenerateError(null);
     setReport(null);
 
+    try {
     // Process each session with hierarchical summarization (full transcript, no truncation)
     const sessionContents = await Promise.all(
       folderSessions.map((s, i) => getSessionContent(s, i))
@@ -517,8 +520,13 @@ DETAILED INSTRUCTIONS FOR EACH FIELD:
 
     setSavedReport(saved);
     setReport(result);
-    setGenerating(false);
     setExpandedSection("executive");
+    } catch (err) {
+      console.error("Folder report generation failed:", err);
+      setGenerateError(err?.message || "Failed to generate report. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // ── Export handlers ──────────────────────────────────────────────────────
@@ -708,7 +716,25 @@ DETAILED INSTRUCTIONS FOR EACH FIELD:
 
         <div className="flex-1 overflow-y-auto px-5 pb-8">
           {/* Empty / Generate state */}
-          {!report && !generating && (
+          {generateError && !generating && !report && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${isDark ? "bg-red-500/15" : "bg-red-50"}`}>
+                <X className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className={`text-base font-semibold mb-2 ${text}`}>Report generation failed</h3>
+              <p className={`text-sm mb-5 max-w-sm ${sub}`}>{generateError}</p>
+              <button
+                onClick={generateReport}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white"
+                style={{ background: "linear-gradient(135deg,#A855F7,#6366F1)" }}
+              >
+                <FileText className="w-4 h-4" />
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {!report && !generating && !generateError && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg,#A855F7,#6366F1)" }}>
                 <FileText className="w-7 h-7 text-white" />

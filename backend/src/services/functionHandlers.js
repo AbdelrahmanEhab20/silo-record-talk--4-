@@ -30,6 +30,13 @@ async function ensureSession(sessionId) {
   return sess;
 }
 
+function canAiUpdateTitle(session) {
+  if (session.title_source === "user") return false;
+  if (session.title_source === "ai" || session.title_source === "placeholder") return true;
+  const title = String(session.title || "").trim();
+  return !title || /^Session — /.test(title);
+}
+
 async function submitSessionForTranscription(session) {
   if (!session.audio_file_url) return null;
   if (!config.assemblyAiKey) {
@@ -87,7 +94,10 @@ export async function completeSessionFromAssemblyJob(sessionId, job) {
       const analysisUpdates = {
         processing_status: "done",
       };
-      if (analysis.title) analysisUpdates.title = analysis.title;
+      if (analysis.title && canAiUpdateTitle(session)) {
+        analysisUpdates.title = analysis.title;
+        analysisUpdates.title_source = "ai";
+      }
       if (analysis.summary) analysisUpdates.summary_text = analysis.summary;
       if (analysis.tags?.length) analysisUpdates.tags = analysis.tags;
       if (analysis.action_items?.length) analysisUpdates.action_items = analysis.action_items;

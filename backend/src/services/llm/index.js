@@ -2,6 +2,11 @@ import { config } from "../../config/index.js";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const OPENAI_BASE = "https://api.openai.com/v1";
+const GROQ_BASE = "https://api.groq.com/openai/v1";
+
+function hasGroq() {
+  return Boolean(config.groqApiKey);
+}
 
 function hasGemini() {
   return Boolean(config.geminiApiKey);
@@ -12,7 +17,7 @@ function hasOpenAI() {
 }
 
 export function isLlmAvailable() {
-  return hasGemini() || hasOpenAI();
+  return hasGroq() || hasGemini() || hasOpenAI();
 }
 
 function extractJson(text) {
@@ -59,26 +64,49 @@ async function callGemini({ prompt, json }) {
   return json ? extractJson(text) : text;
 }
 
-async function callOpenAI({ prompt, json }) {
-  const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
+async function callOpenAIChat({ baseUrl, apiKey, model, prompt, json, providerLabel }) {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${config.openaiApiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model,
       messages: [{ role: "user", content: prompt }],
+      temperature: json ? 0.3 : 0.4,
       ...(json ? { response_format: { type: "json_object" } } : {}),
     }),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`OpenAI API error: ${res.status} ${text}`);
+    throw new Error(`${providerLabel} API error: ${res.status} ${text}`);
   }
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content || "";
   return json ? extractJson(content) : content;
+}
+
+async function callGroq({ prompt, json }) {
+  return callOpenAIChat({
+    baseUrl: GROQ_BASE,
+    apiKey: config.groqApiKey,
+    model: config.groqModel,
+    prompt,
+    json,
+    providerLabel: "Groq",
+  });
+}
+
+async function callOpenAI({ prompt, json }) {
+  return callOpenAIChat({
+    baseUrl: OPENAI_BASE,
+    apiKey: config.openaiApiKey,
+    model: "gpt-4o-mini",
+    prompt,
+    json,
+    providerLabel: "OpenAI",
+  });
 }
 
 /**
@@ -86,9 +114,19 @@ async function callOpenAI({ prompt, json }) {
  * Throws when no provider configured.
  */
 export async function invokeLLM({ prompt, json = false }) {
-  if (hasGemini()) return callGemini({ prompt, json });
-  if (hasOpenAI()) return callOpenAI({ prompt, json });
-  throw new Error("No LLM provider configured (set GEMINI_API_KEY or OPENAI_API_KEY)");
+  if (hasGroq()) {
+    console.log(`[invoke-llm] provider=groq model=${config.groqModel}`);
+    return callGroq({ prompt, json });
+  }
+  if (hasGemini()) {
+    console.log(`[invoke-llm] provider=gemini model=${config.geminiModel}`);
+    return callGemini({ prompt, json });
+  }
+  if (hasOpenAI()) {
+    console.log("[invoke-llm] provider=openai model=gpt-4o-mini");
+    return callOpenAI({ prompt, json });
+  }
+  throw new Error("No LLM provider configured (set GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY)");
 }
 
 const ANALYSIS_PROMPT = (transcript, language) => `You are a meeting/recording analyst. Analyse the transcript below.

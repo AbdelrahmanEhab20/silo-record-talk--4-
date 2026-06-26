@@ -39,15 +39,10 @@ import SpeakerTimeline from "@/components/session/SpeakerTimeline";
 import VideoPlayer from "@/components/session/VideoPlayer";
 
 import { isTruncatedPreview } from "@/lib/transcript";
+import { ACTIVE_PROCESSING_STATUSES, isActiveProcessingStatus } from "@/lib/sessionProcessing";
 
 // ── Statuses that mean the pipeline is still running ───────────────────────
-const ACTIVE_STATUSES = new Set([
-  "pending",
-  "processing",
-  "transcribing",
-  "transcript_ready",
-  "analyzing",
-]);
+const ACTIVE_STATUSES = ACTIVE_PROCESSING_STATUSES;
 
 export default function SessionDetail() {
   const navigate = useNavigate();
@@ -80,6 +75,7 @@ export default function SessionDetail() {
   const [manualNotes, setManualNotes] = useState(null); // null = use session.manual_notes
 
   const pollStartedAtRef = useRef(null);
+  const lastSyncedProcessedAtRef = useRef(null);
   const MAX_POLL_MS = 5 * 60 * 1000; // 5 minutes safety window
 
   const queryClient = useQueryClient();
@@ -88,6 +84,10 @@ export default function SessionDetail() {
   useEffect(() => {
     if (!sessionId) navigate("/home", { replace: true });
   }, [sessionId, navigate]);
+
+  useEffect(() => {
+    lastSyncedProcessedAtRef.current = null;
+  }, [sessionId]);
 
   useEffect(() => {
     appClient.auth.me().then(async (userData) => {
@@ -126,7 +126,8 @@ export default function SessionDetail() {
       if (!s) return 5000;
 
       // Expanded: includes staged statuses from the R5 pipeline
-      const isProcessing = ACTIVE_STATUSES.has(s.processing_status);
+      const isProcessing = isActiveProcessingStatus(s.processing_status);
+      const hasActiveJob = !!s.assemblyai_job_id;
 
       const hasTranscript =
         !!(s.transcript_text && s.transcript_text.trim() && !isTruncatedPreview(s.transcript_text)) ||
@@ -135,10 +136,10 @@ export default function SessionDetail() {
 
       const rawSubs = queryClient.getQueryData(["subsessions", sessionId]);
       const subList = Array.isArray(rawSubs) ? rawSubs : [];
-      const hasActiveSubsession = subList.some((x) => ACTIVE_STATUSES.has(x.processing_status));
+      const hasActiveSubsession = subList.some((x) => isActiveProcessingStatus(x.processing_status));
 
       // Continue polling while processing OR subsessions processing OR transcript missing OR summary missing
-      const shouldPoll = isProcessing || hasActiveSubsession || !hasTranscript || !hasSummary;
+      const shouldPoll = isProcessing || hasActiveJob || hasActiveSubsession || !hasTranscript || !hasSummary;
       if (!shouldPoll) {
         pollStartedAtRef.current = null;
         return false;
@@ -181,7 +182,7 @@ export default function SessionDetail() {
   // Falls back gracefully if the route isn't deployed yet.
   useEffect(() => {
     if (!session?.id) return;
-    if (!ACTIVE_STATUSES.has(session.processing_status)) return;
+    if (!isActiveProcessingStatus(session.processing_status) && !session.assemblyai_job_id) return;
 
     let cancelled = false;
     const check = async () => {
@@ -246,13 +247,30 @@ export default function SessionDetail() {
       setSummaryText(session.summary_text);
     }
 
-    // Sync transcript if local is empty or still a truncation placeholder
-    const localEmpty = !transcriptText || !String(transcriptText).trim();
-    const localTruncated = isTruncatedPreview(transcriptText || "");
-    if (session.transcript_text && (localEmpty || localTruncated) && !isTruncatedPreview(session.transcript_text)) {
-      setTranscriptText(session.transcript_text);
+    const serverTranscript = session.transcript_text || "";
+    const serverHasFullTranscript =
+      serverTranscript.trim().length > 0 && !isTruncatedPreview(serverTranscript);
+    const localText = transcriptText || "";
+    const localEmpty = !localText.trim();
+    const localTruncated = isTruncatedPreview(localText);
+    const serverProcessedAt = session.processed_at
+      ? new Date(session.processed_at).getTime()
+      : null;
+    const processedAtChanged =
+      serverProcessedAt != null &&
+      serverProcessedAt !== lastSyncedProcessedAtRef.current;
+    const serverLooksFresher =
+      serverHasFullTranscript &&
+      serverTranscript.length > localText.length + 100;
+
+    if (
+      serverHasFullTranscript &&
+      (localEmpty || localTruncated || processedAtChanged || serverLooksFresher)
+    ) {
+      setTranscriptText(serverTranscript);
+      if (serverProcessedAt) lastSyncedProcessedAtRef.current = serverProcessedAt;
     }
-  }, [session?.id, session?.summary_text, session?.transcript_text]);
+  }, [session?.id, session?.summary_text, session?.transcript_text, session?.processed_at]);
 
   const handleExportDocx = async () => {
     setExportingDocx(true);
@@ -281,7 +299,10 @@ export default function SessionDetail() {
   const titleMutation = useMutation({
     mutationFn: async (/** @type {string} */ newTitle) => {
       if (!sessionId) throw new Error("Missing session");
-      return await appClient.entities.Session.update(sessionId, { title: newTitle.trim() });
+      return await appClient.entities.Session.update(sessionId, {
+        title: newTitle.trim(),
+        title_source: "user",
+      });
     },
     onSuccess: () => {
       setEditingTitle(false);
@@ -436,7 +457,8 @@ export default function SessionDetail() {
   const currentTranscript = translatedTranscript !== null ? translatedTranscript : (transcriptText !== null ? transcriptText : session.transcript_text);
 
   // Show processing banner for any active pipeline status
-  const isActivelyProcessing = ACTIVE_STATUSES.has(session.processing_status);
+  const isActivelyProcessing =
+    isActiveProcessingStatus(session.processing_status) || !!session.assemblyai_job_id;
 
   return (
     <PlaybackProvider>

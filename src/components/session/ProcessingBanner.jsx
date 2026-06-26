@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { appClient } from "@/api/appClient";
-import { Loader2, X, CheckCircle2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { isActiveProcessingStatus } from "@/lib/sessionProcessing";
+
+const STATUS_LABELS = {
+  pending: "Preparing session",
+  processing: "Processing session",
+  transcribing: "Transcribing audio",
+  transcript_ready: "Transcript ready",
+  analyzing: "Generating AI summary",
+};
+
+function statusLabel(status) {
+  return STATUS_LABELS[status] || "Processing session";
+}
 
 // compact=true: shows inline row (for use inside Recording page)
 // compact=false (default): shows banner card (for use on Home page)
@@ -15,10 +28,11 @@ export default function ProcessingBanner({ compact = false }) {
     try {
       const user = await appClient.auth.me();
       if (!user) return;
-      // Fetch all sessions that are currently processing
-      const allSessions = await appClient.entities.Session.filter({ user_email: user.email }, '-created_date');
+      const allSessions = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
       const pending = allSessions.filter(
-        s => (s.processing_status === 'pending' || s.processing_status === 'processing') && !dismissed.includes(s.id)
+        (s) =>
+          (isActiveProcessingStatus(s.processing_status) || !!s.assemblyai_job_id) &&
+          !dismissed.includes(s.id)
       );
       setProcessingSessions(pending);
     } catch (e) { /* silent */ }
@@ -32,11 +46,14 @@ export default function ProcessingBanner({ compact = false }) {
 
   useEffect(() => {
     const unsub = appClient.entities.Session.subscribe((event) => {
-      if (event.type === 'create' && event.data?.processing_status === 'pending') {
+      if (
+        event.type === "create" &&
+        (isActiveProcessingStatus(event.data?.processing_status) || event.data?.assemblyai_job_id)
+      ) {
         fetchPending();
       }
-      if (event.type === 'update' && (event.data?.processing_status === 'done' || event.data?.processing_status === 'failed')) {
-        setProcessingSessions(prev => prev.filter(s => s.id !== event.id));
+      if (event.type === "update" && (event.data?.processing_status === "done" || event.data?.processing_status === "failed")) {
+        setProcessingSessions((prev) => prev.filter((s) => s.id !== event.id));
       }
     });
     return unsub;
@@ -46,13 +63,14 @@ export default function ProcessingBanner({ compact = false }) {
 
   const latest = processingSessions[0];
   const count = processingSessions.length;
+  const latestLabel = statusLabel(latest.processing_status);
 
   if (compact) {
     return (
       <AnimatePresence>
         <motion.div
           initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
+          animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           className="overflow-hidden"
         >
@@ -60,11 +78,11 @@ export default function ProcessingBanner({ compact = false }) {
             <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin shrink-0" />
             <p className="text-[11px] text-purple-300 flex-1 min-w-0 truncate">
               {count === 1
-                ? `Analyzing "${latest.title}"…`
-                : `${count} previous sessions processing…`}
+                ? `${latestLabel}: "${latest.title}"…`
+                : `${count} sessions processing…`}
             </p>
             <button
-              onClick={() => setDismissed(prev => [...prev, ...processingSessions.map(s => s.id)])}
+              onClick={() => setDismissed((prev) => [...prev, ...processingSessions.map((s) => s.id)])}
               className="text-purple-400/50 hover:text-purple-300 shrink-0"
             >
               <X className="w-3 h-3" />
@@ -88,14 +106,14 @@ export default function ProcessingBanner({ compact = false }) {
         <Loader2 className="w-4 h-4 text-purple-400 animate-spin shrink-0" />
         <div className="flex-1 min-w-0">
           <p className={`text-xs font-semibold ${isDark ? "text-purple-300" : "text-purple-700"}`}>
-            {count === 1 ? `Analyzing "${latest.title}"…` : `${count} sessions processing…`}
+            {count === 1 ? `${latestLabel}: "${latest.title}"…` : `${count} sessions processing…`}
           </p>
           <p className={`text-[10px] mt-0.5 ${isDark ? "text-purple-400/70" : "text-purple-500"}`}>
             AI analysis running in background — your session is saved
           </p>
         </div>
         <button
-          onClick={() => setDismissed(prev => [...prev, ...processingSessions.map(s => s.id)])}
+          onClick={() => setDismissed((prev) => [...prev, ...processingSessions.map((s) => s.id)])}
           className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDark ? "text-purple-400/60 hover:text-purple-300" : "text-purple-400 hover:text-purple-600"}`}
         >
           <X className="w-3.5 h-3.5" />

@@ -252,9 +252,10 @@ export default function Recording() {
           title,
           duration: currentDuration,
           transcript_text: rawTranscript,
-          processing_status: 'done',
+          processing_status: 'processing',
           manual_notes: serializeNotes(quickNotesRef.current),
           source: 'recording',
+          title_source: 'placeholder',
           ...sessionContext,
         });
         autoSaveSessionIdRef.current = session.id;
@@ -384,11 +385,12 @@ export default function Recording() {
       duration: snapshotDuration,
       audio_file_url: audioUrl,
       transcript_text: rawTranscript,
-      processing_status: 'done',
+      processing_status: 'pending',
       manual_notes: serializeNotes(quickNotesRef.current),
       source: 'recording',
       billing_source: 'recording', // Patch 3: Add billing metadata
       billable_minutes_estimate: Math.max(1, Math.ceil(snapshotDuration / 60)), // Patch 3: Estimated billable minutes
+      title_source: 'placeholder',
       ...(isSubsession ? { is_subsession: true, parent_session_id: parentSessionId } : {}),
     });
 
@@ -434,13 +436,14 @@ export default function Recording() {
           audio_file_url: lastAudioUrl,
           transcript_text: rawLastTranscript,
           transcript_file_url: lastTranscriptFileUrl || undefined,
-          processing_status: 'done',
+          processing_status: 'pending',
           is_subsession: true,
           parent_session_id: mainSessionIdRef.current,
           manual_notes: serializeNotes(quickNotesRef.current),
           source: 'recording',
           billing_source: 'recording', // Patch 3: Add billing metadata for sub-sessions too
           billable_minutes_estimate: Math.max(1, Math.ceil(lastDuration / 60)),
+          title_source: 'placeholder',
         });
 
         setUploadStage('processing_last');
@@ -511,7 +514,7 @@ export default function Recording() {
           transcript_text: allTranscripts.slice(0, 10000),
           transcript_file_url: mergedTranscriptFileUrl || undefined,
           duration: totalDuration,
-          processing_status: 'done',
+          processing_status: 'pending',
           manual_notes: serializeNotes(quickNotesRef.current),
           ...sessionContext,
         });
@@ -545,10 +548,11 @@ export default function Recording() {
             audio_file_url: audioUrl,
             transcript_text: rawTranscript.slice(0, 10000),
             transcript_file_url: transcriptFileUrl || undefined,
-            processing_status: 'done',
+            processing_status: 'pending',
             manual_notes: serializeNotes(quickNotesRef.current),
             billing_source: 'recording', // Patch 3: Add billing metadata for single session update
             billable_minutes_estimate: Math.max(1, Math.ceil(lastDuration / 60)),
+            title_source: 'placeholder',
             ...sessionContext,
           });
         } else {
@@ -559,11 +563,12 @@ export default function Recording() {
             audio_file_url: audioUrl,
             transcript_text: rawTranscript.slice(0, 10000),
             transcript_file_url: transcriptFileUrl || undefined,
-            processing_status: 'done',
+            processing_status: 'pending',
             manual_notes: serializeNotes(quickNotesRef.current),
             source: 'recording',
             billing_source: 'recording', // Patch 3: Add billing metadata for single session create
             billable_minutes_estimate: Math.max(1, Math.ceil(lastDuration / 60)),
+            title_source: 'placeholder',
             ...sessionContext,
           });
           sessionId = session.id;
@@ -647,10 +652,11 @@ export default function Recording() {
               user_email: user.email,
               title: placeholderTitle,
               duration: 0,
-              processing_status: 'done',
+              processing_status: 'processing',
               is_subsession: false,
               source: 'recording',
               billing_source: 'recording', // Patch 3: Add billing metadata for main session
+              title_source: 'placeholder',
             });
             mainSessionIdRef.current = mainSession.id;
             parentId = mainSession.id;
