@@ -82,7 +82,8 @@ export const appClient = {
     Session: createEntityClient("Session"),
     Workspace: createEntityClient("Workspace"),
     CreditLedger: createEntityClient("CreditLedger"),
-    PlanSubscription: createEntityClient("PlanSubscription")
+    PlanSubscription: createEntityClient("PlanSubscription"),
+    FolderReport: createEntityClient("FolderReport")
   },
   functions: {
     async invoke(name, payload = {}) {

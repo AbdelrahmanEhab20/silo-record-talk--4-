@@ -164,6 +164,20 @@ const PlanSubscriptionSchema = new mongoose.Schema(
   baseOptions
 );
 
+const FolderReportSchema = new mongoose.Schema(
+  {
+    user_email: { type: String, required: true, index: true },
+    folder_name: { type: String, required: true, index: true },
+    session_ids: { type: [String], default: [] },
+    session_count: { type: Number, default: 0 },
+    report_data: { type: mongoose.Schema.Types.Mixed, required: true },
+    generated_at: { type: Date, default: Date.now },
+    title: String,
+    created_date: { type: Date, default: Date.now },
+  },
+  baseOptions
+);
+
 const JobSchema = new mongoose.Schema(
   {
     type: { type: String, required: true, index: true },
@@ -258,6 +272,8 @@ export const Workspace = mongoose.models.Workspace || mongoose.model("Workspace"
 export const CreditLedger = mongoose.models.CreditLedger || mongoose.model("CreditLedger", CreditLedgerSchema);
 export const PlanSubscription =
   mongoose.models.PlanSubscription || mongoose.model("PlanSubscription", PlanSubscriptionSchema);
+export const FolderReport =
+  mongoose.models.FolderReport || mongoose.model("FolderReport", FolderReportSchema);
 export const Job = mongoose.models.Job || mongoose.model("Job", JobSchema);
 export const WorkspaceMember = mongoose.models.WorkspaceMember || mongoose.model("WorkspaceMember", WorkspaceMemberSchema);
 export const SharedSession = mongoose.models.SharedSession || mongoose.model("SharedSession", SharedSessionSchema);
@@ -297,6 +313,7 @@ export const entityModels = {
   Workspace,
   CreditLedger,
   PlanSubscription,
+  FolderReport,
   WorkspaceMember,
   SharedSession,
   PublicSessionShare,
