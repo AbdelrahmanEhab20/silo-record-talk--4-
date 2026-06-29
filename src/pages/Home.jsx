@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { appClient } from "@/api/appClient";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { SESSIONS_QUERY_KEY } from "@/lib/query-client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Plus, Mic, Loader2, Trash2, CheckSquare, Search, FolderOpen, ChevronDown, Check, Folder, FolderInput, FileText, BookOpen, Archive, Flag } from "lucide-react";
@@ -114,8 +115,37 @@ export default function Home() {
     setLoadingMore(false);
   };
 
+  const mergeSessionUpdate = (updated) => {
+    if (!updated?.id) return;
+    setTotalSessions((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+  };
+
+  const mergeSessionsUpdates = (updates) => {
+    if (!updates?.length) return;
+    const byId = new Map(updates.map((u) => [u.id, u]));
+    setTotalSessions((prev) => prev.map((s) => (byId.has(s.id) ? { ...s, ...byId.get(s.id) } : s)));
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+  };
+
+  const removeSessionsFromList = (ids) => {
+    const idSet = new Set(ids);
+    setTotalSessions((prev) => prev.filter((s) => !idSet.has(s.id)));
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+  };
+
+  const applyFolderRename = (oldName, newName) => {
+    setTotalSessions((prev) => prev.map((s) => (s.folder === oldName ? { ...s, folder: newName } : s)));
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+  };
+
+  const applyFolderDelete = (folderName) => {
+    setTotalSessions((prev) => prev.map((s) => (s.folder === folderName ? { ...s, folder: null } : s)));
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+  };
+
   const { isLoading } = useQuery({
-    queryKey: ["sessions-total"],
+    queryKey: SESSIONS_QUERY_KEY,
     queryFn: async () => {
       if (!user) return [];
       const allUserSessions = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
@@ -128,21 +158,6 @@ export default function Home() {
       return hasPending ? 5000 : false;
     },
   });
-
-  // Real-time subscription: instantly update sessions & refresh folders
-  useEffect(() => {
-    if (!user) return;
-    const unsub = appClient.entities.Session.subscribe((event) => {
-      if (event.type === 'create') {
-        setTotalSessions(prev => [event.data, ...prev]);
-      } else if (event.type === 'update') {
-        setTotalSessions(prev => prev.map(s => s.id === event.id ? event.data : s));
-      } else if (event.type === 'delete') {
-        setTotalSessions(prev => prev.filter(s => s.id !== event.id));
-      }
-    });
-    return unsub;
-  }, [user]);
 
   // Update allFolders whenever totalSessions changes
   useEffect(() => {
@@ -176,8 +191,9 @@ export default function Home() {
   const deleteSelected = async () => {
     if (selected.size === 0) return;
     setDeleting(true);
-    await Promise.all([...selected].map((id) => appClient.entities.Session.delete(id)));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    const ids = [...selected];
+    await Promise.all(ids.map((id) => appClient.entities.Session.delete(id)));
+    removeSessionsFromList(ids);
     cancelSelect();
     setDeleting(false);
   };
@@ -185,8 +201,11 @@ export default function Home() {
   const moveSelectedToFolder = async (folderName) => {
     if (selected.size === 0) return;
     setMovingToFolder(true);
-    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, { folder: folderName || null })));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    const ids = [...selected];
+    const updated = await Promise.all(
+      ids.map((id) => appClient.entities.Session.update(id, { folder: folderName || null }))
+    );
+    mergeSessionsUpdates(updated);
     setMovingToFolder(false);
     setMoveToFolderOpen(false);
     cancelSelect();
@@ -196,22 +215,21 @@ export default function Home() {
     if (selected.size === 0) return;
     const now = new Date().toISOString();
     const deletionAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, {
+    const updated = await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, {
       storage_tier: 'archived',
       archived_at: now,
       scheduled_deletion_at: deletionAt,
     })));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    mergeSessionsUpdates(updated);
     cancelSelect();
   };
 
   const flagSelected = async () => {
     if (selected.size === 0) return;
-    // If all selected are flagged, unflag them; otherwise flag all
     const selectedSessions = totalSessions.filter(s => selected.has(s.id));
     const allFlagged = selectedSessions.every(s => s.is_flagged);
-    await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, { is_flagged: !allFlagged })));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    const updated = await Promise.all([...selected].map((id) => appClient.entities.Session.update(id, { is_flagged: !allFlagged })));
+    mergeSessionsUpdates(updated);
     cancelSelect();
   };
 
@@ -251,6 +269,7 @@ export default function Home() {
     setPage(1);
     const allUserSessions = await appClient.entities.Session.filter({ user_email: user.email }, "-created_date");
     setTotalSessions(allUserSessions);
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
   };
 
   return (
@@ -530,6 +549,8 @@ export default function Home() {
                         selected={selected.has(session.id)}
                         onToggleSelect={toggleSelect}
                         allFolders={allFolders}
+                        onSessionUpdated={mergeSessionUpdate}
+                        onSessionRemoved={(id) => removeSessionsFromList([id])}
                       />
                     </div>
                   </div>
@@ -648,6 +669,8 @@ export default function Home() {
           activeFolder={activeFolder}
           onSelect={setActiveFolder}
           onClose={() => setFolderSidebarOpen(false)}
+          onFolderRenamed={applyFolderRename}
+          onFolderDeleted={applyFolderDelete}
         />
       )}
       {folderReportOpen && (openReportData?.folder_name || (activeFolder && activeFolder !== "__flagged__")) && (

@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { X, Folder, FolderOpen, LayoutGrid, Plus, Pencil, Trash2, Check, Flag, Archive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { SESSIONS_QUERY_KEY } from "@/lib/query-client";
 
 const FOLDER_COLORS = [
   "#a855f7", "#6366f1", "#22d3ee", "#f59e0b", "#10b981", "#ef4444", "#f97316", "#ec4899",
@@ -17,57 +18,33 @@ function colorForFolder(name) {
   return FOLDER_COLORS[Math.abs(hash) % FOLDER_COLORS.length];
 }
 
-export default function FolderSidebar({ sessions, activeFolder, onSelect, onClose }) {
-   const { isDark } = useTheme();
-   const queryClient = useQueryClient();
-   const navigate = useNavigate();
-   const [user, setUser] = useState(null);
-   const [allSessions, setAllSessions] = useState(() => {
-      // Load cached data from localStorage on mount
-      try {
-        const cached = localStorage.getItem('folderSidebarCache');
-        return cached ? JSON.parse(cached) : [];
-      } catch {
-        return [];
-      }
-   });
-   const [isLoading, setIsLoading] = useState(true);
+export default function FolderSidebar({
+  sessions = [],
+  activeFolder,
+  onSelect,
+  onClose,
+  onFolderRenamed,
+  onFolderDeleted,
+}) {
+  const { isDark } = useTheme();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const allSessions = sessions;
 
-   const [creating, setCreating] = useState(false);
-   const [newName, setNewName] = useState("");
-   const [renamingFolder, setRenamingFolder] = useState(null);
-   const [renameValue, setRenameValue] = useState("");
-   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [renamingFolder, setRenamingFolder] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [saving, setSaving] = useState(false);
 
-   // Fetch all sessions in background and update cache
-   React.useEffect(() => {
-      const initUser = async () => {
-        try {
-          const userData = await appClient.auth.me();
-          setUser(userData);
-          const raw = await appClient.entities.Session.filter({ user_email: userData.email }, "-created_date");
-          // Exclude sub-sessions so counts match app-wide totals
-          const allUserSessions = raw.filter(s => !s.is_subsession);
-          setAllSessions(allUserSessions);
-          // Cache for next load
-          localStorage.setItem('folderSidebarCache', JSON.stringify(allUserSessions));
-        } catch (error) {
-          console.error('Failed to load all sessions:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      initUser();
-   }, []);
-
-   const folders = useMemo(() => {
-     const map = {};
-     allSessions.forEach(s => {
-       const f = s.folder?.trim();
-       if (f) map[f] = (map[f] || 0) + 1;
-     });
-     return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-   }, [allSessions]);
+  const folders = useMemo(() => {
+    const map = {};
+    allSessions.forEach(s => {
+      const f = s.folder?.trim();
+      if (f) map[f] = (map[f] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [allSessions]);
 
   const bg = isDark ? "bg-[#141414]" : "bg-white";
   const border = isDark ? "border-white/10" : "border-gray-200";
@@ -77,8 +54,6 @@ export default function FolderSidebar({ sessions, activeFolder, onSelect, onClos
   const createFolder = async () => {
     const name = newName.trim();
     if (!name || saving) return;
-    // Folder exists just by naming — no data to create; user assigns sessions via cards.
-    // Just select the new folder so user can start adding sessions.
     setSaving(true);
     setNewName("");
     setCreating(false);
@@ -92,10 +67,10 @@ export default function FolderSidebar({ sessions, activeFolder, onSelect, onClos
     const newVal = renameValue.trim();
     if (!newVal || newVal === oldName || saving) return;
     setSaving(true);
-    // Update all sessions in this folder
     const toUpdate = allSessions.filter(s => s.folder === oldName);
     await Promise.all(toUpdate.map(s => appClient.entities.Session.update(s.id, { folder: newVal })));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    onFolderRenamed?.(oldName, newVal);
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
     if (activeFolder === oldName) onSelect(newVal);
     setRenamingFolder(null);
     setRenameValue("");
@@ -107,7 +82,8 @@ export default function FolderSidebar({ sessions, activeFolder, onSelect, onClos
     setSaving(true);
     const toUpdate = allSessions.filter(s => s.folder === folderName);
     await Promise.all(toUpdate.map(s => appClient.entities.Session.update(s.id, { folder: null })));
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    onFolderDeleted?.(folderName);
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
     if (activeFolder === folderName) onSelect(null);
     setSaving(false);
   };

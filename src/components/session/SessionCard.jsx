@@ -7,10 +7,19 @@ import FolderBadge from "@/components/FolderBadge";
 import { format, isValid } from "date-fns";
 import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { SESSIONS_QUERY_KEY } from "@/lib/query-client";
 import { SESSION_TYPES } from "@/lib/sessionTypes";
 import { siloConfirm, siloError } from "@/lib/siloAlert";
 
-export default function SessionCard({ session, selecting, selected, onToggleSelect, allFolders = [] }) {
+export default function SessionCard({
+  session,
+  selecting,
+  selected,
+  onToggleSelect,
+  allFolders = [],
+  onSessionUpdated,
+  onSessionRemoved,
+}) {
   const { isDark } = useTheme();
   const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
@@ -25,12 +34,13 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     setArchiving(true);
     const now = new Date().toISOString();
     const deletionAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    await appClient.entities.Session.update(session.id, {
+    const updated = await appClient.entities.Session.update(session.id, {
       storage_tier: 'archived',
       archived_at: now,
       scheduled_deletion_at: deletionAt,
     });
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    onSessionUpdated?.(updated);
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
     setArchiving(false);
   };
 
@@ -48,7 +58,8 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     setDeleting(true);
     try {
       await appClient.entities.Session.delete(session.id);
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      onSessionRemoved?.(session.id);
+      queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
     } catch (err) {
       console.error('Delete failed:', err);
       await siloError("Delete failed", "Could not delete this session.");
@@ -62,8 +73,9 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
     e.stopPropagation();
     if (flagging) return;
     setFlagging(true);
-    await appClient.entities.Session.update(session.id, { is_flagged: !session.is_flagged });
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    const updated = await appClient.entities.Session.update(session.id, { is_flagged: !session.is_flagged });
+    onSessionUpdated?.(updated);
+    queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
     setFlagging(false);
   };
 
@@ -213,7 +225,11 @@ export default function SessionCard({ session, selecting, selected, onToggleSele
               )}
               {!selecting && (
                 <>
-                  <FolderBadge session={session} allFolders={allFolders} />
+                  <FolderBadge
+                    session={session}
+                    allFolders={allFolders}
+                    onSessionUpdated={onSessionUpdated}
+                  />
                   <button
                     onClick={handleArchive}
                     disabled={archiving}

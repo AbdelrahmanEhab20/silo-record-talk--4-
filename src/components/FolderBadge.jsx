@@ -4,6 +4,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { Folder, X, Check } from "lucide-react";
 import { appClient } from "@/api/appClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { SESSIONS_QUERY_KEY } from "@/lib/query-client";
 
 const FOLDER_COLORS = [
   "#a855f7", "#6366f1", "#22d3ee", "#f59e0b", "#10b981", "#ef4444", "#f97316", "#ec4899",
@@ -16,29 +17,19 @@ export function colorForFolder(name) {
   return FOLDER_COLORS[Math.abs(hash) % FOLDER_COLORS.length];
 }
 
-export default function FolderBadge({ session, allFolders: propFolders }) {
+export default function FolderBadge({ session, allFolders: propFolders = [], onSessionUpdated }) {
   const { isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
-  const [fetchedFolders, setFetchedFolders] = useState(null);
   const queryClient = useQueryClient();
+  const allFolders = propFolders ?? [];
 
-  // Merge prop folders with any fetched ones; fetchedFolders takes priority when loaded
-  const allFolders = fetchedFolders ?? propFolders ?? [];
-
-  const openModal = async (e) => {
+  const openModal = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDraft("");
     setOpen(true);
-    // Always fetch fresh folder list from DB
-    try {
-      const me = await appClient.auth.me();
-      const sessions = await appClient.entities.Session.filter({ user_email: me.email }, "-created_date", 200);
-      const folders = [...new Set(sessions.filter(s => s.folder).map(s => s.folder))].sort();
-      setFetchedFolders(folders);
-    } catch {}
   };
 
   const closeModal = (e) => {
@@ -49,11 +40,15 @@ export default function FolderBadge({ session, allFolders: propFolders }) {
 
   const save = async (folder) => {
     setSaving(true);
-    await appClient.entities.Session.update(session.id, { folder: folder || null });
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    setSaving(false);
-    setOpen(false);
-    setDraft("");
+    try {
+      const updated = await appClient.entities.Session.update(session.id, { folder: folder || null });
+      onSessionUpdated?.(updated);
+      queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+    } finally {
+      setSaving(false);
+      setOpen(false);
+      setDraft("");
+    }
   };
 
   const color = colorForFolder(session.folder);
