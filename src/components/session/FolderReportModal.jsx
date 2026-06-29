@@ -31,6 +31,53 @@ function formatReportError(err) {
   return message || "Failed to generate report. Please try again.";
 }
 
+/** Groq/LLM sometimes returns { text } objects instead of plain strings — React cannot render those. */
+function asReportText(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    if (typeof value.text === "string") return value.text;
+    if (typeof value.task === "string") return value.task;
+    if (typeof value.decision === "string") return value.decision;
+    if (typeof value.content === "string") return value.content;
+    if (typeof value.summary === "string") return value.summary;
+  }
+  return String(value);
+}
+
+function normalizeReportData(raw) {
+  if (!raw || typeof raw !== "object") return raw;
+  return {
+    ...raw,
+    executive_summary: asReportText(raw.executive_summary),
+    overall_objective: asReportText(raw.overall_objective),
+    session_format: asReportText(raw.session_format),
+    closing_remarks: asReportText(raw.closing_remarks),
+    decisions: (raw.decisions || []).map(asReportText).filter(Boolean),
+    key_outcomes: (raw.key_outcomes || []).map(asReportText).filter(Boolean),
+    discussion_topics: (raw.discussion_topics || []).map((t) => ({
+      ...t,
+      topic: asReportText(t?.topic),
+      description: asReportText(t?.description),
+      key_points: (t?.key_points || []).map(asReportText).filter(Boolean),
+      speakers_involved: (t?.speakers_involved || []).map(asReportText).filter(Boolean),
+    })),
+    action_items: (raw.action_items || [])
+      .map((a) => ({
+        task: asReportText(a?.task || a?.text),
+        owner: a?.owner ? asReportText(a.owner) : null,
+        due: a?.due || a?.deadline ? asReportText(a.due || a.deadline) : null,
+      }))
+      .filter((a) => a.task),
+    minutes: (raw.minutes || []).map((m) => ({
+      ...m,
+      session_label: asReportText(m?.session_label),
+      highlights: (m?.highlights || []).map(asReportText).filter(Boolean),
+    })),
+  };
+}
+
 // ─── PDF Generator (matching DOCX layout) ─────────────────────────────────
 function generatePDF({ report, folderName, sessions, generatedAt }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -310,7 +357,9 @@ export default function FolderReportModal({ folderName, sessions, user, onClose,
   const { isDark } = useTheme();
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState(null);
-  const [report, setReport] = useState(initialReport?.report_data || null);
+  const [report, setReport] = useState(
+    initialReport?.report_data ? normalizeReportData(initialReport.report_data) : null
+  );
   const [savedReport, setSavedReport] = useState(initialReport || null);
   const [expandedSection, setExpandedSection] = useState(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -330,7 +379,7 @@ export default function FolderReportModal({ folderName, sessions, user, onClose,
       const existing = await appClient.entities.FolderReport.filter({ user_email: user.email, folder_name: folderName }, "-created_date", 1);
       if (existing.length > 0) {
         setSavedReport(existing[0]);
-        setReport(existing[0].report_data);
+        setReport(normalizeReportData(existing[0].report_data));
         setExpandedSection("executive");
       }
     };
@@ -427,7 +476,8 @@ ${combinedSummary}`,
     }
     const sessionDocs = sessionContents.join("\n\n");
 
-    const result = await appClient.integrations.Core.InvokeLLM({
+    const result = normalizeReportData(
+      await appClient.integrations.Core.InvokeLLM({
       model: "gpt_5",
       prompt: `You are a senior meeting analyst and professional minutes writer tasked with producing HIGHLY DETAILED, OFFICIAL MEETING MINUTES for the folder/project "${folderName}".
 
@@ -518,7 +568,8 @@ DETAILED INSTRUCTIONS FOR EACH FIELD:
           },
         }
       }
-    });
+      })
+    );
 
     // Save / update in DB
     const reportRecord = {
