@@ -17,6 +17,17 @@ function formatDuration(secs) {
   return `${m}m`;
 }
 
+function formatReportError(err) {
+  const message = String(err?.message || "");
+  if (/429|quota|rate.?limit|resource_exhausted/i.test(message)) {
+    return "AI quota reached. Try again later.";
+  }
+  if (/400.*json|response_format.*json_object|must contain the word 'json'/i.test(message)) {
+    return "Report format error — please try again.";
+  }
+  return message || "Failed to generate report. Please try again.";
+}
+
 // ─── PDF Generator (matching DOCX layout) ─────────────────────────────────
 function generatePDF({ report, folderName, sessions, generatedAt }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -417,6 +428,8 @@ You have ${folderSessions.length} session(s) below. This is a formal record — 
 
 ${sessionDocs}
 
+Return a single valid JSON object with these fields:
+
 DETAILED INSTRUCTIONS FOR EACH FIELD:
 
 - executive_summary: Write a rich 8–12 sentence executive summary. Cover: the overall context and purpose, who was involved, the main themes and topics discussed, key tensions or debates, what was resolved, what remains open, and the significance of this session for the project/team.
@@ -523,7 +536,7 @@ DETAILED INSTRUCTIONS FOR EACH FIELD:
     setExpandedSection("executive");
     } catch (err) {
       console.error("Folder report generation failed:", err);
-      setGenerateError(err?.message || "Failed to generate report. Please try again.");
+      setGenerateError(formatReportError(err));
     } finally {
       setGenerating(false);
     }
