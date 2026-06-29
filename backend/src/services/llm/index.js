@@ -46,6 +46,19 @@ function ensureJsonPrompt(prompt) {
   return `Respond with valid JSON only.\n\n${text}`;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryDelayMs(errorText) {
+  const text = String(errorText || "");
+  const msMatch = text.match(/try again in (\d+(?:\.\d+)?)\s*ms/i);
+  if (msMatch) return Math.ceil(Number(msMatch[1])) + 250;
+  const secMatch = text.match(/try again in (\d+(?:\.\d+)?)\s*s/i);
+  if (secMatch) return Math.ceil(Number(secMatch[1]) * 1000) + 250;
+  return 2000;
+}
+
 async function callGemini({ prompt, json }) {
   const url = `${GEMINI_BASE}/models/${encodeURIComponent(config.geminiModel)}:generateContent`;
   const body = {
@@ -73,26 +86,44 @@ async function callGemini({ prompt, json }) {
 
 async function callOpenAIChat({ baseUrl, apiKey, model, prompt, json, providerLabel }) {
   const userContent = json ? ensureJsonPrompt(prompt) : prompt;
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: userContent }],
-      temperature: json ? 0.3 : 0.4,
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-    }),
+  const maxAttempts = 5;
+  const body = JSON.stringify({
+    model,
+    messages: [{ role: "user", content: userContent }],
+    temperature: json ? 0.3 : 0.4,
+    ...(json ? { response_format: { type: "json_object" } } : {}),
   });
-  if (!res.ok) {
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content || "";
+      return json ? extractJson(content) : content;
+    }
+
     const text = await res.text();
+    if (res.status === 429 && attempt < maxAttempts) {
+      const delayMs = parseRetryDelayMs(text);
+      console.warn(
+        `[invoke-llm] ${providerLabel} rate limited, retry ${attempt}/${maxAttempts - 1} in ${delayMs}ms`
+      );
+      await sleep(delayMs);
+      continue;
+    }
+
     throw new Error(`${providerLabel} API error: ${res.status} ${text}`);
   }
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content || "";
-  return json ? extractJson(content) : content;
+
+  throw new Error(`${providerLabel} API error: rate limit exceeded after retries`);
 }
 
 async function callGroq({ prompt, json }) {

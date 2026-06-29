@@ -19,6 +19,9 @@ function formatDuration(secs) {
 
 function formatReportError(err) {
   const message = String(err?.message || "");
+  if (/429.*try again in \d/i.test(message) || /rate_limit_exceeded|tokens per minute/i.test(message)) {
+    return "AI is busy processing — wait a few seconds and tap Try Again.";
+  }
   if (/429|quota|rate.?limit|resource_exhausted/i.test(message)) {
     return "AI quota reached. Try again later.";
   }
@@ -385,11 +388,14 @@ ${chunk}`,
       return `${meta}\nContent:\n${rawText}`;
     }
 
-    // Hierarchical: chunk → summarize each chunk → combine summaries
+    // Hierarchical: chunk → summarize each chunk sequentially (avoids Groq TPM bursts)
     const chunks = chunkText(rawText);
-    const chunkSummaries = await Promise.all(
-      chunks.map((chunk, i) => summarizeChunk(chunk, session.title || `Session ${index + 1}`, i, chunks.length))
-    );
+    const chunkSummaries = [];
+    for (let i = 0; i < chunks.length; i++) {
+      chunkSummaries.push(
+        await summarizeChunk(chunks[i], session.title || `Session ${index + 1}`, i, chunks.length)
+      );
+    }
 
     const combinedSummary = chunkSummaries.join("\n\n---\n\n");
 
@@ -414,10 +420,11 @@ ${combinedSummary}`,
     setReport(null);
 
     try {
-    // Process each session with hierarchical summarization (full transcript, no truncation)
-    const sessionContents = await Promise.all(
-      folderSessions.map((s, i) => getSessionContent(s, i))
-    );
+    // Process each session sequentially to stay within Groq TPM limits
+    const sessionContents = [];
+    for (let i = 0; i < folderSessions.length; i++) {
+      sessionContents.push(await getSessionContent(folderSessions[i], i));
+    }
     const sessionDocs = sessionContents.join("\n\n");
 
     const result = await appClient.integrations.Core.InvokeLLM({

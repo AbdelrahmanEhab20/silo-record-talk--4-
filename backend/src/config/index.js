@@ -46,7 +46,7 @@ export const config = {
   emailReplyTo: process.env.EMAIL_REPLY_TO || "",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   groqApiKey: process.env.GROQ_API_KEY || "",
-  groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+  groqModel: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
   assemblyAiKey: process.env.ASSEMBLYAI_API_KEY || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
