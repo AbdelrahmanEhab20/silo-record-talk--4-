@@ -72,7 +72,7 @@ async function callGemini({ prompt, json }) {
 }
 
 async function callOpenAIChat({ baseUrl, apiKey, model, prompt, json, providerLabel }) {
-  const content = json ? ensureJsonPrompt(prompt) : prompt;
+  const userContent = json ? ensureJsonPrompt(prompt) : prompt;
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -81,7 +81,7 @@ async function callOpenAIChat({ baseUrl, apiKey, model, prompt, json, providerLa
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "user", content }],
+      messages: [{ role: "user", content: userContent }],
       temperature: json ? 0.3 : 0.4,
       ...(json ? { response_format: { type: "json_object" } } : {}),
     }),
