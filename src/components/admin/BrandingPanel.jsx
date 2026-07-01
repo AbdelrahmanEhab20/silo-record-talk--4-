@@ -14,10 +14,12 @@ import {
   Upload,
 } from "lucide-react";
 
-const LOGO_TYPES = ["image/png", "image/svg+xml", "image/webp"];
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image/webp"];
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const FAVICON_TYPES = [
   "image/png",
+  "image/jpeg",
+  "image/jpg",
   "image/svg+xml",
   "image/x-icon",
   "image/vnd.microsoft.icon",
@@ -256,7 +258,13 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
     try {
       const assetFolder = field === "logo_url" ? "branding/logo" : "branding/favicon";
       const { file_url } = await appClient.integrations.Core.UploadFile({ file, assetFolder });
+      if (!file_url) throw new Error("Upload succeeded but no file URL was returned");
       setField(field, file_url);
+      const { settings } = await adminApi.updateDeploymentSettings({ [field]: file_url });
+      const next = pickEditable(settings);
+      setInitial(next);
+      setForm(next);
+      await refreshPublicSettings?.();
     } catch (err) {
       setError(err?.data?.error?.message || err?.message || "Upload failed");
     } finally {
@@ -266,7 +274,19 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
     }
   };
 
-  const handleSave = async () => {
+  const handleAssetRemove = async (field) => {
+    setField(field, "");
+    try {
+      const { settings } = await adminApi.updateDeploymentSettings({ [field]: "" });
+      const next = pickEditable(settings);
+      setInitial(next);
+      setForm(next);
+      await refreshPublicSettings?.();
+    } catch (err) {
+      setError(err?.data?.error?.message || err?.message || "Failed to remove asset");
+    }
+  };
+
     if (saving) return;
     const payload = diff(initial, form);
     if (Object.keys(payload).length === 0) return;
@@ -496,7 +516,7 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
               setPreview: setLogoPreview,
             })
           }
-          onRemove={() => setField("logo_url", "")}
+          onRemove={() => handleAssetRemove("logo_url")}
           isDark={isDark}
           textSub={textSub}
         />
@@ -518,7 +538,7 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
               setPreview: setFaviconPreview,
             })
           }
-          onRemove={() => setField("favicon_url", "")}
+          onRemove={() => handleAssetRemove("favicon_url")}
           isDark={isDark}
           textSub={textSub}
         />

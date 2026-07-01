@@ -65,7 +65,10 @@ export default function AdminSettings() {
         } else {
           setSettings(DEFAULT_SETTINGS);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+        setSettings(DEFAULT_SETTINGS);
+      }
       setLoading(false);
     };
     init();
