@@ -1,46 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { useTheme } from "@/lib/ThemeContext";
-import LLMProvidersSection from "@/components/admin/LLMProvidersSection";
-import OrgUsageSettings from "@/components/admin/OrgUsageSettings";
-import FeatureAISection from "@/components/admin/FeatureAISection";
+// Legacy Base44 admin UI — not wired on Render backend; kept for Phase 2/3.
+// import LLMProvidersSection from "@/components/admin/LLMProvidersSection";
+// import OrgUsageSettings from "@/components/admin/OrgUsageSettings";
+// import FeatureAISection from "@/components/admin/FeatureAISection";
 import BrandingPanel from "@/components/admin/BrandingPanel";
-import {
-  Shield, Cpu, ChevronDown, ChevronUp, Save, Users, Palette
-} from "lucide-react";
+import PlatformProvidersBanner from "@/components/admin/PlatformProvidersBanner";
+import { Shield, Cpu, Palette } from "lucide-react";
 import { isSystemAdmin } from "@/lib/roles";
 
-const SETTING_KEY = "global";
+// const SETTING_KEY = "global";
+// const DEFAULT_SETTINGS = { ... }; // Phase 2: AISettings persistence
 
-const DEFAULT_SETTINGS = {
-  setting_key: SETTING_KEY,
-  llm_providers: [],
-  live_transcription: { primary: "browser_native", fallback: "builtin" },
-  chunk_processing: { primary: "builtin", fallback: null },
-  ai_analysis: { primary: "builtin", fallback: null },
-  full_retranscription: { primary: "builtin", fallback: null },
-  video_url_processing: { primary: "builtin", fallback: null },
-  audio_upload_processing: { primary: "builtin", fallback: null },
-  image_processing: { primary: "builtin", fallback: null },
-  text_processing: { primary: "builtin", fallback: null },
-  org_usage_limits: {},
-};
+// Usage & Limits tab hidden until Phase 2 wires org_usage_limits — see docs/PHASE2_USAGE_LIMITS.md
+// { key: "usage", label: "Usage & Limits", icon: Users },
 
 const TABS = [
-  { key: "ai", label: "AI Models", icon: Cpu },
-  { key: "usage", label: "Usage & Limits", icon: Users },
+  { key: "ai", label: "AI Providers", icon: Cpu },
   { key: "branding", label: "Branding", icon: Palette },
 ];
 
 export default function AdminSettings() {
   const { isDark } = useTheme();
-  const [settings, setSettings] = useState(null);
-  const [settingsId, setSettingsId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState(false);
   const [isAdmin, setIsAdmin] = useState(null);
-  const [openSection, setOpenSection] = useState("llm_providers");
   const [activeTab, setActiveTab] = useState("ai");
 
   const bg = isDark ? "bg-[#0A0A0A]" : "bg-[#F5F5F7]";
@@ -58,38 +42,15 @@ export default function AdminSettings() {
           return;
         }
         setIsAdmin(true);
-        const records = await appClient.entities.AISettings.filter({ setting_key: SETTING_KEY });
-        if (records.length > 0) {
-          setSettingsId(records[0].id);
-          setSettings({ ...DEFAULT_SETTINGS, ...records[0] });
-        } else {
-          setSettings(DEFAULT_SETTINGS);
-        }
+        // Phase 2: reload AISettings for editable limits
+        // const records = await appClient.entities.AISettings.filter({ setting_key: SETTING_KEY });
       } catch (e) {
         console.error(e);
-        setSettings(DEFAULT_SETTINGS);
       }
       setLoading(false);
     };
     init();
   }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      if (settingsId) {
-        await appClient.entities.AISettings.update(settingsId, settings);
-      } else {
-        const created = await appClient.entities.AISettings.create(settings);
-        setSettingsId(created.id);
-      }
-      setSavedMsg(true);
-      setTimeout(() => setSavedMsg(false), 2500);
-    } catch (e) { console.error(e); }
-    setSaving(false);
-  };
-
-  const updateProviders = (providers) => setSettings(prev => ({ ...prev, llm_providers: providers }));
 
   if (loading) {
     return (
@@ -111,27 +72,24 @@ export default function AdminSettings() {
     );
   }
 
-  const providers = settings?.llm_providers || [];
-
   return (
     <div className={`min-h-screen ${bg} py-8 px-5 pb-24`}>
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center">
             <Cpu className="w-5 h-5 text-purple-400" />
           </div>
           <div>
             <h1 className={`text-2xl font-bold ${textMain}`}>AI & Platform Settings</h1>
-            <p className={`text-xs ${textSub}`}>Admin only — configure AI models and org usage limits</p>
+            <p className={`text-xs ${textSub}`}>Admin only — branding and server AI configuration</p>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className={`flex gap-1 p-1 rounded-2xl mb-6 ${isDark ? "bg-white/5" : "bg-gray-100"}`}>
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
+              type="button"
               onClick={() => setActiveTab(key)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === key
@@ -145,96 +103,27 @@ export default function AdminSettings() {
           ))}
         </div>
 
-        {/* Save Button — per tab (Branding manages its own save) */}
-        {activeTab !== "branding" && (
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, var(--brand-accent, #A855F7), var(--brand-primary, #6366F1))" }}
-            >
-              <Save className="w-4 h-4" />
-              {saving ? "Saving…" : savedMsg ? "Saved ✓" : "Save"}
-            </button>
-          </div>
+        {activeTab === "ai" && (
+          <PlatformProvidersBanner isDark={isDark} textMain={textMain} textSub={textSub} card={card} />
         )}
 
-        {/* AI Models Tab */}
+        {/*
+          Legacy Base44 admin sections — saved to AISettings but not applied by Node backend.
+          Re-enable with Phase 2/3; see docs/PHASE2_USAGE_LIMITS.md and docs/AI_PROVIDERS.md.
+
         {activeTab === "ai" && (
           <div className="space-y-3">
-            {/* LLM Providers Section */}
-            <div className={`rounded-2xl border overflow-hidden ${card}`}>
-              <button
-                onClick={() => setOpenSection(openSection === "llm_providers" ? null : "llm_providers")}
-                className={`w-full flex items-center justify-between px-5 py-4 transition-colors ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/15 flex items-center justify-center">
-                    <Cpu className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className={`text-sm font-semibold ${textMain}`}>LLM Provider Integrations</p>
-                    <p className={`text-xs ${textSub}`}>
-                      {providers.length === 0 ? "No custom providers yet — built-in provider is always available" : `${providers.length} custom provider${providers.length > 1 ? "s" : ""} configured`}
-                    </p>
-                  </div>
-                </div>
-                {openSection === "llm_providers" ? <ChevronUp className={`w-4 h-4 ${textSub}`} /> : <ChevronDown className={`w-4 h-4 ${textSub}`} />}
-              </button>
-              {openSection === "llm_providers" && (
-                <div className="px-5 pb-5">
-                  <LLMProvidersSection providers={providers} onChange={updateProviders} isDark={isDark} textSub={textSub} textMain={textMain} />
-                </div>
-              )}
-            </div>
-
-            {/* Feature AI Provider Assignment */}
-            <div className={`rounded-2xl border overflow-hidden ${card}`}>
-              <button
-                onClick={() => setOpenSection(openSection === "feature_ai" ? null : "feature_ai")}
-                className={`w-full flex items-center justify-between px-5 py-4 transition-colors ${isDark ? "hover:bg-white/5" : "hover:bg-gray-50"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center">
-                    <Cpu className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className={`text-sm font-semibold ${textMain}`}>Feature AI Providers</p>
-                    <p className={`text-xs ${textSub}`}>Control which AI powers transcription, analysis, and each feature</p>
-                  </div>
-                </div>
-                {openSection === "feature_ai" ? <ChevronUp className={`w-4 h-4 ${textSub}`} /> : <ChevronDown className={`w-4 h-4 ${textSub}`} />}
-              </button>
-              {openSection === "feature_ai" && (
-                <div className="px-5 pb-5">
-                  <FeatureAISection
-                    settings={settings}
-                    onChange={(updated) => setSettings(prev => ({ ...prev, ...updated }))}
-                    providers={providers}
-                    isDark={isDark}
-                    textSub={textSub}
-                    textMain={textMain}
-                  />
-                </div>
-              )}
-            </div>
-
+            ... LLMProvidersSection ...
+            ... FeatureAISection ...
           </div>
         )}
 
         {activeTab === "usage" && (
           <div className={`rounded-2xl border p-5 ${card}`}>
-            <OrgUsageSettings
-              value={settings?.org_usage_limits || {}}
-              onChange={(val) => setSettings((prev) => ({ ...prev, org_usage_limits: val }))}
-              providers={providers}
-              isDark={isDark}
-              textMain={textMain}
-              textSub={textSub}
-            />
+            <OrgUsageSettings ... />
           </div>
         )}
+        */}
 
         {activeTab === "branding" && (
           <BrandingPanel isDark={isDark} textMain={textMain} textSub={textSub} card={card} />

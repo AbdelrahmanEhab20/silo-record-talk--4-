@@ -10,7 +10,9 @@ import { siloConfirmDeleteAccount, siloConfirmLogout, siloError } from "@/lib/si
 import { createPageUrl } from "@/utils";
 import UsageOverview from "@/components/UsageOverview";
 import StorageUsagePanel from "@/components/storage/StorageUsagePanel";
-import AIProviderSettings from "@/components/settings/AIProviderSettings";
+// Legacy per-user BYOK UI — not wired on Render backend; kept for future use.
+// import AIProviderSettings from "@/components/settings/AIProviderSettings";
+import ServerAIInfoCard from "@/components/settings/ServerAIInfoCard";
 import UserProfileCard from "@/components/settings/UserProfileCard";
 
 const options = [
@@ -148,12 +150,13 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* AI & Speech Section */}
+        {/* AI — server-managed (AssemblyAI + Groq on Render) */}
         <section className="mb-6">
           <p className="text-xs font-semibold text-gray-400 dark:text-[#A1A1A6] uppercase tracking-wider mb-3 px-1">
-            AI & Speech-to-Text Settings
+            AI & Speech-to-Text
           </p>
-          <AIProviderSettings />
+          <ServerAIInfoCard />
+          {/* <AIProviderSettings /> — legacy BYOK cards; dormant until wired */}
         </section>
 
         {/* Appearance Section */}

@@ -1,3 +1,7 @@
+/**
+ * Legacy Base44 Pro plan / feature AI toggles. Not read by Node backend at runtime.
+ * See docs/AI_PROVIDERS.md.
+ */
 import React, { useState } from "react";
 import { Star, ChevronDown, ChevronUp, Mic, AudioLines, Brain, RefreshCw, Video, Upload, Image, FileText, Zap, GraduationCap, Mail } from "lucide-react";
 

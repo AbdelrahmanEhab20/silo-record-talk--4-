@@ -1,3 +1,8 @@
+/**
+ * Legacy per-user AI provider picker (OpenAI Whisper, Google, AWS, Azure, Custom LLM).
+ * Not wired on the migrated Render backend — user fields are saved but ignored at runtime.
+ * Re-enable when BYOK or per-user routing is implemented. See docs/AI_PROVIDERS.md.
+ */
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { Check, Eye, EyeOff, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";

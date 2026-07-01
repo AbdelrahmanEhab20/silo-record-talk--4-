@@ -1,3 +1,8 @@
+/**
+ * Legacy Base44 org usage limits UI. Saves to AISettings.org_usage_limits.
+ * Backend does not enforce yet — tab hidden in AdminSettings until Phase 2.
+ * See docs/PHASE2_USAGE_LIMITS.md.
+ */
 import React from "react";
 import { Building2 } from "lucide-react";
 import ProPlanSettings from "@/components/admin/ProPlanSettings";

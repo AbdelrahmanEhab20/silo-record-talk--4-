@@ -1,3 +1,7 @@
+/**
+ * Legacy Base44 per-feature LLM routing UI. Not read by Node backend at runtime.
+ * See docs/AI_PROVIDERS.md.
+ */
 import React from "react";
 import { ChevronDown } from "lucide-react";
 

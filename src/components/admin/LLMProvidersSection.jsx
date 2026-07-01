@@ -1,3 +1,7 @@
+/**
+ * Legacy Base44 custom LLM provider admin UI. Not read by Node backend at runtime.
+ * See docs/AI_PROVIDERS.md.
+ */
 import React, { useState } from "react";
 import { Plus, Trash2, Eye, EyeOff, CheckCircle2, Circle, ChevronDown, Zap, Loader2 } from "lucide-react";
 import { appClient } from "@/api/appClient";
