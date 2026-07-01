@@ -287,6 +287,7 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
     }
   };
 
+  const handleSave = async () => {
     if (saving) return;
     const payload = diff(initial, form);
     if (Object.keys(payload).length === 0) return;
