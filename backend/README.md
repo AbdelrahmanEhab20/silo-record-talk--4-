@@ -33,6 +33,23 @@ Production guardrails:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+## R2 asset storage (avatars + branding)
+
+Set on Render backend for persistent profile photos, logos, and favicons. Session audio stays in MongoDB GridFS.
+
+```bash
+STORAGE_PROVIDER=r2
+S3_BUCKET=silo-record-talk-assets
+S3_REGION=auto
+S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+S3_PUBLIC_BASE_URL=https://pub-xxxxxxxx.r2.dev
+ASSET_UPLOAD_MAX_SIZE=5242880
+```
+
+Uploads with `asset_folder` (`avatars`, `branding/logo`, `branding/favicon`) go to R2 when configured. Other uploads use GridFS unchanged. Omit R2 vars locally to keep GridFS fallback for assets.
+
 ## Core endpoints
 
 - `GET /api/health`

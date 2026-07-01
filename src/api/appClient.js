@@ -100,9 +100,10 @@ export const appClient = {
   },
   integrations: {
     Core: {
-      async UploadFile({ file }) {
+      async UploadFile({ file, assetFolder }) {
         const formData = new FormData();
         formData.append("file", file);
+        if (assetFolder) formData.append("asset_folder", assetFolder);
         return apiRequest("/integrations/core/upload-file", { method: "POST", body: formData });
       },
       async InvokeLLM(payload) {

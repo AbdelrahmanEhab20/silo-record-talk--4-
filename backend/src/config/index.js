@@ -58,5 +58,13 @@ export const config = {
   microsoftRedirectUri: process.env.MICROSOFT_REDIRECT_URI || "",
   microsoftTenant: process.env.MICROSOFT_TENANT || "common",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
-  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ""
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  storageProvider: process.env.STORAGE_PROVIDER || "local",
+  s3Bucket: process.env.S3_BUCKET || "",
+  s3Region: process.env.S3_REGION || "auto",
+  s3Endpoint: process.env.S3_ENDPOINT || "",
+  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || "",
+  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
+  s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL || "",
+  assetUploadMaxSize: Number(process.env.ASSET_UPLOAD_MAX_SIZE) || 5242880,
 };

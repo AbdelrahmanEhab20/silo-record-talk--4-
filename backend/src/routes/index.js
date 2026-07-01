@@ -13,6 +13,12 @@ import googleRoutes from "./google.js";
 import microsoftRoutes from "./microsoft.js";
 import { filesRouter, buildFileUrl } from "./files.js";
 import { storeAudioBuffer } from "../services/storage/gridfs.js";
+import {
+  ASSET_IMAGE_MIME_TYPES,
+  isAllowedAssetFolder,
+  isR2AssetsEnabled,
+  uploadAsset,
+} from "../services/storage/assetStorage.js";
 import { getMinutesUsedForEmail } from "../services/usageMinutes.js";
 import { getTranscriptionJob } from "../services/transcription/assemblyai.js";
 import { completeSessionFromAssemblyJob } from "../services/functionHandlers.js";
@@ -79,7 +85,10 @@ function sanitizeProfileUpdate(body) {
   }
   return out;
 }
-const upload = multer();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024 },
+});
 
 router.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "silo-backend" });
@@ -385,6 +394,41 @@ router.post(
   async (req, res, next) => {
     try {
       if (!req.file) return res.status(400).json({ error: { message: "file is required" } });
+
+      const assetFolder = String(req.body?.asset_folder || "").trim();
+      if (assetFolder) {
+        if (!isAllowedAssetFolder(assetFolder)) {
+          return res.status(400).json({ error: { message: "Invalid asset_folder" } });
+        }
+        if (!ASSET_IMAGE_MIME_TYPES.has(req.file.mimetype)) {
+          return res.status(400).json({ error: { message: "Unsupported image type for asset upload" } });
+        }
+        if (req.file.size > config.assetUploadMaxSize) {
+          return res.status(400).json({
+            error: {
+              message: `Asset must be ${Math.round(config.assetUploadMaxSize / (1024 * 1024))} MB or smaller`,
+            },
+          });
+        }
+
+        if (isR2AssetsEnabled()) {
+          const uploaded = await uploadAsset({
+            buffer: req.file.buffer,
+            filename: req.file.originalname || `asset-${Date.now()}`,
+            mimeType: req.file.mimetype,
+            folder: assetFolder,
+            userEmail: req.user?.email || null,
+          });
+          return res.json({
+            file_url: uploaded.file_url,
+            key: uploaded.key,
+            filename: req.file.originalname || "",
+            size: req.file.size,
+            mime_type: req.file.mimetype,
+          });
+        }
+      }
+
       const stored = await storeAudioBuffer({
         buffer: req.file.buffer,
         filename: req.file.originalname || `upload-${Date.now()}`,

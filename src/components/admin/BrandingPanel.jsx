@@ -254,7 +254,8 @@ export default function BrandingPanel({ isDark, textMain, textSub, card }) {
     const localUrl = URL.createObjectURL(file);
     setPreview(localUrl);
     try {
-      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
+      const assetFolder = field === "logo_url" ? "branding/logo" : "branding/favicon";
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file, assetFolder });
       setField(field, file_url);
     } catch (err) {
       setError(err?.data?.error?.message || err?.message || "Upload failed");

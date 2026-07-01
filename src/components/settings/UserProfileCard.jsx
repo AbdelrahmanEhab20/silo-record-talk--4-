@@ -77,7 +77,7 @@ export default function UserProfileCard() {
     setPreviewPhoto(localPreview);
 
     try {
-      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
+      const { file_url } = await appClient.integrations.Core.UploadFile({ file, assetFolder: "avatars" });
       const updated = await appClient.auth.updateMe({ profile_photo_url: file_url });
       await refreshUser(updated);
       setPreviewPhoto(null);
