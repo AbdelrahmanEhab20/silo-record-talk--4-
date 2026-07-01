@@ -34,11 +34,16 @@ export default function UserProfileCard() {
   const [previewPhoto, setPreviewPhoto] = useState(null);
   const [form, setForm] = useState(() => buildForm(user));
   const [error, setError] = useState(null);
+  const [brokenPhotoUrl, setBrokenPhotoUrl] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!editing) setForm(buildForm(user));
   }, [user, editing]);
+
+  useEffect(() => {
+    setBrokenPhotoUrl(null);
+  }, [user?.profile_photo_url]);
 
   // Free the preview blob URL when it is no longer needed.
   useEffect(() => () => {
@@ -78,7 +83,9 @@ export default function UserProfileCard() {
 
     try {
       const { file_url } = await appClient.integrations.Core.UploadFile({ file, assetFolder: "avatars" });
+      if (!file_url) throw new Error("Upload succeeded but no file URL was returned");
       const updated = await appClient.auth.updateMe({ profile_photo_url: file_url });
+      setBrokenPhotoUrl(null);
       await refreshUser(updated);
       setPreviewPhoto(null);
     } catch (err) {
@@ -127,7 +134,9 @@ export default function UserProfileCard() {
     );
   }
 
-  const photoSrc = previewPhoto || user.profile_photo_url || null;
+  const photoSrc =
+    previewPhoto ||
+    (user.profile_photo_url && user.profile_photo_url !== brokenPhotoUrl ? user.profile_photo_url : null);
   const card = isDark ? "bg-[#1C1C1E]" : "bg-white";
   const textSub = isDark ? "text-white/40" : "text-gray-400";
   const inputCls = `w-full text-sm rounded-xl px-3 py-2.5 outline-none transition-colors ${
@@ -157,7 +166,10 @@ export default function UserProfileCard() {
                   src={photoSrc}
                   alt="Profile"
                   className="w-full h-full object-cover"
-                  onError={() => setPreviewPhoto(null)}
+                  onError={() => {
+                    if (user.profile_photo_url) setBrokenPhotoUrl(user.profile_photo_url);
+                    setPreviewPhoto(null);
+                  }}
                 />
               ) : (
                 <span className="text-white text-xl font-bold">{initials}</span>

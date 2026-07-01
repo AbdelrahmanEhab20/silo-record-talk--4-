@@ -37,6 +37,10 @@ function getS3Client() {
       accessKeyId: config.s3AccessKeyId,
       secretAccessKey: config.s3SecretAccessKey,
     },
+    forcePathStyle: true,
+    // R2 does not support AWS SDK default CRC32 checksums (v3.729+).
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 }
 

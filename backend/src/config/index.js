@@ -26,6 +26,14 @@ function validateProd() {
   }
 }
 
+function normalizeS3Endpoint(endpoint, bucket) {
+  let value = String(endpoint || "").trim().replace(/\/+$/, "");
+  if (bucket && value.endsWith(`/${bucket}`)) {
+    value = value.slice(0, -(bucket.length + 1));
+  }
+  return value;
+}
+
 validateProd();
 
 export const config = {
@@ -62,7 +70,7 @@ export const config = {
   storageProvider: process.env.STORAGE_PROVIDER || "local",
   s3Bucket: process.env.S3_BUCKET || "",
   s3Region: process.env.S3_REGION || "auto",
-  s3Endpoint: process.env.S3_ENDPOINT || "",
+  s3Endpoint: normalizeS3Endpoint(process.env.S3_ENDPOINT, process.env.S3_BUCKET),
   s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || "",
   s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
   s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL || "",

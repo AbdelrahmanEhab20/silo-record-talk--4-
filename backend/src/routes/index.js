@@ -412,20 +412,27 @@ router.post(
         }
 
         if (isR2AssetsEnabled()) {
-          const uploaded = await uploadAsset({
-            buffer: req.file.buffer,
-            filename: req.file.originalname || `asset-${Date.now()}`,
-            mimeType: req.file.mimetype,
-            folder: assetFolder,
-            userEmail: req.user?.email || null,
-          });
-          return res.json({
-            file_url: uploaded.file_url,
-            key: uploaded.key,
-            filename: req.file.originalname || "",
-            size: req.file.size,
-            mime_type: req.file.mimetype,
-          });
+          try {
+            const uploaded = await uploadAsset({
+              buffer: req.file.buffer,
+              filename: req.file.originalname || `asset-${Date.now()}`,
+              mimeType: req.file.mimetype,
+              folder: assetFolder,
+              userEmail: req.user?.email || null,
+            });
+            return res.json({
+              file_url: uploaded.file_url,
+              key: uploaded.key,
+              filename: req.file.originalname || "",
+              size: req.file.size,
+              mime_type: req.file.mimetype,
+            });
+          } catch (r2Err) {
+            console.error("[upload-file] R2 asset upload failed:", r2Err.message);
+            return res.status(502).json({
+              error: { message: `Asset upload failed: ${r2Err.message}` },
+            });
+          }
         }
       }
 
