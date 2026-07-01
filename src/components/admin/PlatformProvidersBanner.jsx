@@ -10,17 +10,17 @@ export default function PlatformProvidersBanner({ isDark, textMain, textSub, car
     {
       icon: Mic,
       title: "Uploaded audio transcription",
-      detail: "AssemblyAI — set ASSEMBLYAI_API_KEY on the Render backend.",
+      detail: "",
     },
     {
       icon: Sparkles,
       title: "Summaries, folder reports, word analysis, Ask Silo",
-      detail: "Groq — set GROQ_API_KEY and GROQ_MODEL on the Render backend.",
+      detail: "",
     },
     {
       icon: Cpu,
       title: "Live microphone recording",
-      detail: "Browser Web Speech API (client-side). No server key required.",
+      detail: "Browser Web Speech API",
     },
   ];
 
@@ -36,9 +36,8 @@ export default function PlatformProvidersBanner({ isDark, textMain, textSub, car
       {rows.map(({ icon: Icon, title, detail }) => (
         <div
           key={title}
-          className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
-            isDark ? "border-white/8 bg-white/[0.03]" : "border-gray-100 bg-gray-50"
-          }`}
+          className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${isDark ? "border-white/8 bg-white/[0.03]" : "border-gray-100 bg-gray-50"
+            }`}
         >
           <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
             <Icon className="w-4 h-4 text-purple-400" />
